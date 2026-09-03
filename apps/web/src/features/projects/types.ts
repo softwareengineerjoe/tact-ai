@@ -20,3 +20,10 @@ export interface ProjectListParams {
   status?: ProjectStatus;
   search?: string;
 }
+
+export interface UpdateProjectInput {
+  startDate: string | null;
+  targetEndDate: string | null;
+  expectedTeamSize: number | null;
+  version: number;
+}

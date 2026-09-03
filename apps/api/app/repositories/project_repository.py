@@ -1,6 +1,7 @@
 """Org-scoped, soft-delete-aware persistence for projects."""
 
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -123,3 +124,9 @@ class ProjectRepository:
         self._session.add(requirement)
         await self._session.flush()
         return requirement
+
+    async def soft_delete_requirement(self, requirement: ProjectRoleRequirement) -> None:
+        """Soft-delete a role requirement, preserving history (MASTER 21)."""
+        requirement.deleted_at = datetime.now(UTC)
+        requirement.version += 1
+        await self._session.flush()

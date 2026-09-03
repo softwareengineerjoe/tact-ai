@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 from app.api.deps import get_project_service, require_permission
 from app.schemas.project import (
@@ -25,3 +25,12 @@ async def update_project_requirement(
 ) -> ProjectRoleRequirementRead:
     requirement = await service.update_requirement(principal, requirement_id, payload)
     return ProjectRoleRequirementRead.from_model(requirement)
+
+
+@router.delete("/{requirement_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project_requirement(
+    requirement_id: uuid.UUID,
+    principal: Principal = Depends(require_permission(Permission.PROJECTS_EDIT)),
+    service: ProjectService = Depends(get_project_service),
+) -> None:
+    await service.delete_requirement(principal, requirement_id)

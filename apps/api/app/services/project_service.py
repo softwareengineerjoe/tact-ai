@@ -142,11 +142,48 @@ class ProjectService:
         if requirement.version != data.version:
             raise ConflictError("Requirement was modified by someone else")
 
-        updates = data.model_dump(exclude_unset=True, exclude={"version"})
+        updates = data.model_dump(
+            exclude_unset=True,
+            exclude={"version", "required_skills", "preferred_skills"},
+        )
         for field, value in updates.items():
             setattr(requirement, field, value)
+
+        # Replace skills only when the caller supplied them.
+        if data.required_skills is not None or data.preferred_skills is not None:
+            requirement.required_skills.clear()
+            for skill_name in data.required_skills or []:
+                skill = await self._repository.ensure_skill(principal.organization_id, skill_name)
+                requirement.required_skills.append(
+                    RoleRequirementSkill(
+                        organization_id=principal.organization_id,
+                        skill_id=skill.id,
+                        skill=skill,
+                        is_preferred=False,
+                    )
+                )
+            for skill_name in data.preferred_skills or []:
+                skill = await self._repository.ensure_skill(principal.organization_id, skill_name)
+                requirement.required_skills.append(
+                    RoleRequirementSkill(
+                        organization_id=principal.organization_id,
+                        skill_id=skill.id,
+                        skill=skill,
+                        is_preferred=True,
+                    )
+                )
+
         requirement.version += 1
         return requirement
+
+    async def delete_requirement(self, principal: Principal, requirement_id: uuid.UUID) -> None:
+        principal.require(Permission.PROJECTS_EDIT)
+        requirement = await self._repository.get_requirement(
+            principal.organization_id, requirement_id
+        )
+        if requirement is None:
+            raise NotFound("Project role requirement not found")
+        await self._repository.soft_delete_requirement(requirement)
 
     async def _require_project(self, principal: Principal, project_id: uuid.UUID) -> Project:
         project = await self._repository.get(principal.organization_id, project_id)

@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { ProjectListPage } from '@/pages/ProjectListPage';
+import { ProjectSetupPage } from '@/pages/ProjectSetupPage';
 import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
 import { TicketListPage } from '@/pages/TicketListPage';
 
@@ -37,6 +38,14 @@ export const router = createBrowserRouter([
         element: (
           <RequirePermission permission='team.recommend'>
             <TeamBuilderPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: '/projects/:projectId/setup',
+        element: (
+          <RequirePermission permission='projects.edit'>
+            <ProjectSetupPage />
           </RequirePermission>
         ),
       },

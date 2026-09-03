@@ -41,6 +41,16 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
           </Link>
         </PermissionGate>
       </div>
+      <PermissionGate permission='projects.edit'>
+        <div className='mt-2 flex justify-end'>
+          <Link
+            to={`/projects/${project.id}/setup`}
+            className='text-xs font-medium text-fg-muted hover:text-fg hover:underline'
+          >
+            Set up roles &amp; dates
+          </Link>
+        </div>
+      </PermissionGate>
     </article>
   );
 }

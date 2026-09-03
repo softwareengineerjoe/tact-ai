@@ -1,6 +1,10 @@
 import { request } from '@/services/httpClient';
 import { ProjectListSchema, ProjectSchema } from '@/features/projects/schemas';
-import type { CreateProjectInput, ProjectListParams } from '@/features/projects/types';
+import type {
+  CreateProjectInput,
+  ProjectListParams,
+  UpdateProjectInput,
+} from '@/features/projects/types';
 
 function toQuery(params: ProjectListParams): string {
   const query = new URLSearchParams();
@@ -23,5 +27,16 @@ export const projectsService = {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
       body: JSON.stringify(input),
+    }),
+
+  update: (projectId: string, input: UpdateProjectInput) =>
+    request(`/projects/${projectId}`, ProjectSchema, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        start_date: input.startDate,
+        target_end_date: input.targetEndDate,
+        expected_team_size: input.expectedTeamSize,
+        version: input.version,
+      }),
     }),
 };

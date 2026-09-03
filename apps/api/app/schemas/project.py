@@ -72,6 +72,8 @@ class ProjectRoleRequirementUpdate(BaseModel):
     headcount: int | None = Field(default=None, ge=1)
     allocation_percent: int | None = Field(default=None, ge=0, le=100)
     description: str | None = None
+    required_skills: list[str] | None = None
+    preferred_skills: list[str] | None = None
     version: int  # required for optimistic concurrency (MASTER 23)
 
 
