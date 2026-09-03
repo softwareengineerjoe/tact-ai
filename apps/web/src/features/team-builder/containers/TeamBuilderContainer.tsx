@@ -8,6 +8,7 @@ import {
   LoadingState,
   toast,
 } from '@/components/shared';
+import { useProject } from '@/features/projects';
 import { useProjectRequirements } from '@/features/team-builder/api/useProjectRequirements';
 import { useProjectTeam } from '@/features/team-builder/api/useProjectTeam';
 import { useRecommendations } from '@/features/team-builder/api/useRecommendations';
@@ -26,24 +27,30 @@ interface TeamBuilderContainerProps {
   projectId: string;
 }
 
-function isoAtMidnight(date: string): string {
-  return new Date(`${date}T00:00:00.000Z`).toISOString();
-}
+// Assignment statuses that count toward filling a role's headcount.
+const FILLING_STATUSES = new Set<Assignment['status']>([
+  'recommended',
+  'reserved',
+  'pending_approval',
+  'confirmed',
+  'active',
+]);
 
-function defaultDate(offsetDays: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 /** Owns Team Builder data, selection state, and the assign/reserve lifecycle. */
 export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
+  const project = useProject(projectId);
   const requirements = useProjectRequirements(projectId);
   const roster = useProjectTeam(projectId);
 
   const [roleId, setRoleId] = useState<string | null>(null);
-  const [periodStart, setPeriodStart] = useState(() => defaultDate(0));
-  const [periodEnd, setPeriodEnd] = useState(() => defaultDate(90));
   const [toAssign, setToAssign] = useState<RecommendationCandidate | null>(
     null,
   );
@@ -53,16 +60,35 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
   const assign = useAssignEmployee(projectId);
   const remove = useRemoveAssignment(projectId);
 
+  // The staffing period comes from the project's own dates (set on the
+  // project), not a per-role picker in the Team Builder.
+  const periodStartIso = project.data?.start_date ?? null;
+  const periodEndIso = project.data?.target_end_date ?? null;
+  const hasPeriod = periodStartIso !== null && periodEndIso !== null;
+
+  // How many people each role still needs, from the current roster.
+  const filledByRole = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const assignment of roster.data ?? []) {
+      if (!FILLING_STATUSES.has(assignment.status)) continue;
+      counts.set(
+        assignment.role_requirement_id,
+        (counts.get(assignment.role_requirement_id) ?? 0) + 1,
+      );
+    }
+    return counts;
+  }, [roster.data]);
+
   const recommendationParams = useMemo<RecommendationParams | null>(() => {
-    if (!roleId) return null;
+    if (!roleId || !periodStartIso || !periodEndIso) return null;
     return {
       projectId,
       roleRequirementId: roleId,
-      periodStart: isoAtMidnight(periodStart),
-      periodEnd: isoAtMidnight(periodEnd),
+      periodStart: periodStartIso,
+      periodEnd: periodEndIso,
       limit: 10,
     };
-  }, [projectId, roleId, periodStart, periodEnd]);
+  }, [projectId, roleId, periodStartIso, periodEndIso]);
 
   const recommendations = useRecommendations(recommendationParams);
 
@@ -87,15 +113,15 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
   };
 
   const handleAssignConfirm = () => {
-    if (!toAssign) return;
+    if (!toAssign || !periodStartIso || !periodEndIso) return;
     assign.mutate(
       {
         projectId,
         roleRequirementId: toAssign.role_requirement_id,
         employeeId: toAssign.employee_id,
         allocationPercent: selectedRole?.allocation_percent ?? 100,
-        startDate: isoAtMidnight(periodStart),
-        endDate: isoAtMidnight(periodEnd),
+        startDate: periodStartIso,
+        endDate: periodEndIso,
       },
       {
         onSuccess: (result) => {
@@ -133,9 +159,19 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
     );
   };
 
-  // --- Requirements lifecycle (drives the role selector) ---
-  if (requirements.isPending) {
-    return <LoadingState label='Loading roles' variant='skeleton' rows={2} />;
+  // --- Project + requirements lifecycle (drive the role selector) ---
+  if (project.isPending || requirements.isPending) {
+    return (
+      <LoadingState label='Loading team builder' variant='skeleton' rows={3} />
+    );
+  }
+  if (project.isError && project.error.status === 403) {
+    return <ForbiddenState requiredPermissions={['projects.view']} />;
+  }
+  if (project.isError) {
+    return (
+      <ErrorState error={project.error} onRetry={() => void project.refetch()} />
+    );
   }
   if (requirements.isError && requirements.error.status === 403) {
     return <ForbiddenState requiredPermissions={['projects.view']} />;
@@ -160,61 +196,86 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
   return (
     <div className='space-y-6'>
       <section aria-labelledby='tb-role-heading' className='space-y-3'>
-        <h2 id='tb-role-heading' className='text-base font-semibold text-fg'>
-          1. Choose a role and period
-        </h2>
-        <div className='flex flex-wrap gap-2'>
-          {requirements.data.map((requirement) => (
-            <button
-              key={requirement.id}
-              type='button'
-              onClick={() => setRoleId(requirement.id)}
-              aria-pressed={roleId === requirement.id}
-              className={
-                roleId === requirement.id
-                  ? 'rounded-md border border-primary bg-primary-subtle px-3 py-1.5 text-sm font-medium text-primary'
-                  : 'rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-fg-body transition-colors hover:bg-surface-muted'
-              }
-            >
-              {requirement.role_name}
-              <span className='ml-1.5 text-xs text-fg-muted'>
-                ×{requirement.headcount}
-              </span>
-            </button>
-          ))}
+        <div className='flex flex-wrap items-baseline justify-between gap-2'>
+          <h2 id='tb-role-heading' className='text-base font-semibold text-fg'>
+            1. Choose a role to staff
+          </h2>
+          <p className='text-xs text-fg-muted'>
+            {hasPeriod ? (
+              <>
+                Project duration:{' '}
+                <span className='font-medium text-fg-body'>
+                  {formatDate(periodStartIso)} – {formatDate(periodEndIso)}
+                </span>
+              </>
+            ) : (
+              'Project duration not set'
+            )}
+          </p>
         </div>
-        <div className='flex flex-wrap items-end gap-4'>
-          <div>
-            <label
-              htmlFor='tb-start'
-              className='mb-1 block text-xs font-medium text-fg-muted'
-            >
-              Period start
-            </label>
-            <input
-              id='tb-start'
-              type='date'
-              value={periodStart}
-              onChange={(event) => setPeriodStart(event.target.value)}
-              className='h-10 rounded-sm border border-border bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-hover'
-            />
+
+        {!hasPeriod ? (
+          <div
+            role='status'
+            className='rounded-md border border-warning/30 bg-surface p-3 text-sm text-fg-body'
+          >
+            Set the project start and target end dates on the project before
+            staffing — capacity is calculated for that period.
           </div>
-          <div>
-            <label
-              htmlFor='tb-end'
-              className='mb-1 block text-xs font-medium text-fg-muted'
-            >
-              Period end
-            </label>
-            <input
-              id='tb-end'
-              type='date'
-              value={periodEnd}
-              onChange={(event) => setPeriodEnd(event.target.value)}
-              className='h-10 rounded-sm border border-border bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-hover'
-            />
-          </div>
-        </div>
+        ) : null}
+
+        <ul className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+          {requirements.data.map((requirement) => {
+            const filled = filledByRole.get(requirement.id) ?? 0;
+            const isComplete = filled >= requirement.headcount;
+            const isSelected = roleId === requirement.id;
+            return (
+              <li key={requirement.id}>
+                <button
+                  type='button'
+                  onClick={() => setRoleId(requirement.id)}
+                  aria-pressed={isSelected}
+                  className={
+                    isSelected
+                      ? 'flex w-full flex-col gap-1 rounded-md border border-primary bg-primary-subtle p-3 text-left'
+                      : 'flex w-full flex-col gap-1 rounded-md border border-border bg-surface p-3 text-left transition-colors hover:bg-surface-muted'
+                  }
+                >
+                  <span className='flex items-center justify-between gap-2'>
+                    <span
+                      className={
+                        isSelected
+                          ? 'text-sm font-medium text-primary'
+                          : 'text-sm font-medium text-fg'
+                      }
+                    >
+                      {requirement.role_name}
+                    </span>
+                    <span
+                      className={
+                        isComplete
+                          ? 'inline-flex items-center gap-1 rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-medium text-success'
+                          : 'inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-fg-muted'
+                      }
+                    >
+                      <span
+                        aria-hidden
+                        className='h-1.5 w-1.5 rounded-full bg-current'
+                      />
+                      {filled}/{requirement.headcount} filled
+                    </span>
+                  </span>
+                  <span className='text-xs text-fg-muted'>
+                    {requirement.allocation_percent}% allocation
+                    {requirement.headcount > 1
+                      ? ` · needs ${requirement.headcount} people`
+                      : ''}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section aria-labelledby='tb-candidates-heading' className='space-y-3'>
@@ -224,7 +285,12 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
         >
           2. Recommended candidates
         </h2>
-        {!recommendationParams ? (
+        {!hasPeriod ? (
+          <EmptyState
+            title='Set the project duration first'
+            description='Recommendations use the project period to compute capacity.'
+          />
+        ) : !recommendationParams ? (
           <EmptyState
             title='Select a role to see recommendations'
             description='Pick a role above to run the deterministic Project Fit Score.'

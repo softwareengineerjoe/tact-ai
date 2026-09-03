@@ -15,6 +15,9 @@ export const projectsService = {
   list: (params: ProjectListParams, signal?: AbortSignal) =>
     request(`/projects?${toQuery(params)}`, ProjectListSchema, { signal }),
 
+  get: (projectId: string, signal?: AbortSignal) =>
+    request(`/projects/${projectId}`, ProjectSchema, { signal }),
+
   create: (input: CreateProjectInput) =>
     request('/projects', ProjectSchema, {
       method: 'POST',

@@ -1,4 +1,5 @@
 export { useProjects } from './api/useProjects';
+export { useProject } from './api/useProject';
 export { projectKeys } from './api/projectKeys';
 export { ProjectCard } from './components/ProjectCard';
 export { ProjectStatusBadge } from './components/ProjectStatusBadge';

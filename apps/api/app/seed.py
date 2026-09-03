@@ -179,6 +179,8 @@ async def seed() -> None:
                 business_objective="Consolidate staffing and delivery tooling.",
                 priority="high",
                 status="staffing",
+                start_date=datetime(2026, 10, 1, tzinfo=UTC),
+                target_end_date=datetime(2026, 12, 31, tzinfo=UTC),
             )
             session.add(project)
             await session.flush()
@@ -201,6 +203,13 @@ async def seed() -> None:
                 ]
             )
             await session.flush()
+
+        # Ensure the demo project has a duration (idempotent) so the Team
+        # Builder can compute capacity for the project period.
+        if project.start_date is None:
+            project.start_date = datetime(2026, 10, 1, tzinfo=UTC)
+        if project.target_end_date is None:
+            project.target_end_date = datetime(2026, 12, 31, tzinfo=UTC)
 
         # Availability so employees have computable capacity (idempotent).
         # Unknown availability is never treated as available (MASTER FR-006),
