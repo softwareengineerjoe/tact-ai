@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import (
     get_assignment_service,
@@ -37,7 +37,18 @@ async def get_project_team(
     service: AssignmentService = Depends(get_assignment_service),
 ) -> list[AssignmentRead]:
     items = await service.list_team(principal, project_id)
-    return [AssignmentRead.model_validate(a) for a in items]
+    return [
+        AssignmentRead(
+            **AssignmentRead.model_validate(a).model_dump(
+                exclude={"employee_display_name", "supervisor_name"}
+            ),
+            employee_display_name=a.employee.display_name if a.employee else None,
+            supervisor_name=(
+                a.employee.supervisor.display_name if a.employee and a.employee.supervisor else None
+            ),
+        )
+        for a in items
+    ]
 
 
 @router.post(
@@ -70,6 +81,7 @@ async def recommend_team(
             data_freshness=c.data_freshness,
             warnings=c.warnings,
             recommendation_reason=c.recommendation_reason,
+            supervisor_name=c.supervisor_name,
         )
         for c in candidates
     ]
@@ -117,3 +129,13 @@ async def update_assignment(
 ) -> AssignmentRead:
     assignment = await service.update_status(principal, assignment_id, payload)
     return AssignmentRead.model_validate(assignment)
+
+
+@router.delete("/assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_assignment(
+    assignment_id: uuid.UUID,
+    version: int = Query(..., ge=0),
+    principal: Principal = Depends(require_permission(Permission.TEAM_REMOVE)),
+    service: AssignmentService = Depends(get_assignment_service),
+) -> None:
+    await service.remove_assignment(principal, assignment_id, version=version)

@@ -13,9 +13,11 @@ import { useProjectTeam } from '@/features/team-builder/api/useProjectTeam';
 import { useRecommendations } from '@/features/team-builder/api/useRecommendations';
 import { useReserveEmployee } from '@/features/team-builder/api/useReserveEmployee';
 import { useAssignEmployee } from '@/features/team-builder/api/useAssignEmployee';
+import { useRemoveAssignment } from '@/features/team-builder/api/useRemoveAssignment';
 import { CandidateTable } from '@/features/team-builder/components/CandidateTable';
 import { TeamRoster } from '@/features/team-builder/components/TeamRoster';
 import type {
+  Assignment,
   RecommendationCandidate,
   RecommendationParams,
 } from '@/features/team-builder/types';
@@ -42,10 +44,14 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
   const [roleId, setRoleId] = useState<string | null>(null);
   const [periodStart, setPeriodStart] = useState(() => defaultDate(0));
   const [periodEnd, setPeriodEnd] = useState(() => defaultDate(90));
-  const [toAssign, setToAssign] = useState<RecommendationCandidate | null>(null);
+  const [toAssign, setToAssign] = useState<RecommendationCandidate | null>(
+    null,
+  );
+  const [toRemove, setToRemove] = useState<Assignment | null>(null);
 
   const reserve = useReserveEmployee(projectId);
   const assign = useAssignEmployee(projectId);
+  const remove = useRemoveAssignment(projectId);
 
   const recommendationParams = useMemo<RecommendationParams | null>(() => {
     if (!roleId) return null;
@@ -100,6 +106,28 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
         onError: (error) => {
           toast.error(error.message);
           setToAssign(null);
+        },
+      },
+    );
+  };
+
+  const handleRemoveConfirm = () => {
+    if (!toRemove) return;
+    const name = toRemove.employee_display_name ?? 'team member';
+    remove.mutate(
+      {
+        projectId,
+        assignmentId: toRemove.id,
+        version: toRemove.version,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Removed ${name} from the team`);
+          setToRemove(null);
+        },
+        onError: (error) => {
+          toast.error(error.message);
+          setToRemove(null);
         },
       },
     );
@@ -236,10 +264,7 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
       </section>
 
       <section aria-labelledby='tb-roster-heading' className='space-y-3'>
-        <h2
-          id='tb-roster-heading'
-          className='text-base font-semibold text-fg'
-        >
+        <h2 id='tb-roster-heading' className='text-base font-semibold text-fg'>
           3. Current team
         </h2>
         {roster.isPending ? (
@@ -255,7 +280,11 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
             description='Reserve or assign candidates to build the team.'
           />
         ) : (
-          <TeamRoster assignments={roster.data} />
+          <TeamRoster
+            assignments={roster.data}
+            pendingAssignmentId={remove.isPending ? toRemove?.id : undefined}
+            onRemove={setToRemove}
+          />
         )}
       </section>
 
@@ -271,6 +300,20 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
         isPending={assign.isPending}
         onConfirm={handleAssignConfirm}
         onCancel={() => setToAssign(null)}
+      />
+
+      <ConfirmDialog
+        open={toRemove !== null}
+        title='Remove from team?'
+        description={
+          toRemove
+            ? `This removes ${toRemove.employee_display_name ?? 'this member'} from the team and releases their capacity.`
+            : undefined
+        }
+        confirmLabel='Remove'
+        isPending={remove.isPending}
+        onConfirm={handleRemoveConfirm}
+        onCancel={() => setToRemove(null)}
       />
     </div>
   );

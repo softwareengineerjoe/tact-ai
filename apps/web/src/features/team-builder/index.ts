@@ -5,6 +5,7 @@ export { TeamRoster } from './components/TeamRoster';
 export { useProjectRequirements } from './api/useProjectRequirements';
 export { useProjectTeam } from './api/useProjectTeam';
 export { useRecommendations } from './api/useRecommendations';
+export { useRemoveAssignment } from './api/useRemoveAssignment';
 export type {
   RoleRequirement,
   RecommendationCandidate,
@@ -13,4 +14,5 @@ export type {
   RecommendationParams,
   ReserveInput,
   AssignInput,
+  RemoveInput,
 } from './types';

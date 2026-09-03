@@ -81,7 +81,10 @@ class EmployeeRepository:
                 Employee.organization_id == organization_id,
                 Employee.deleted_at.is_(None),
             )
-            .options(selectinload(Employee.skills).selectinload(EmployeeSkill.skill))
+            .options(
+                selectinload(Employee.skills).selectinload(EmployeeSkill.skill),
+                selectinload(Employee.supervisor),
+            )
             .order_by(Employee.display_name.asc())
         )
         return list(await self._session.scalars(stmt))

@@ -74,6 +74,16 @@ _EMPLOYEES = [
     ("EMP-1006", "Sofia Rossi", "sofia.rossi@example.com", "Product Designer", "Design", "UTC+2"),
 ]
 
+# Who reports to whom (employee_code -> supervisor employee_code). Maria leads
+# engineering; the QA and design leads sit under her for the demo org.
+_SUPERVISORS = {
+    "EMP-1002": "EMP-1001",
+    "EMP-1003": "EMP-1001",
+    "EMP-1004": "EMP-1001",
+    "EMP-1005": "EMP-1001",
+    "EMP-1006": "EMP-1001",
+}
+
 
 async def seed() -> None:
     async with async_session_factory() as session:
@@ -139,6 +149,21 @@ async def seed() -> None:
                             proficiency_level=level,
                         )
                     )
+
+        await session.flush()
+
+        # Supervisor links (idempotent): set only when currently unset.
+        employees_by_code: dict[str, Employee] = {
+            e.employee_code: e
+            for e in await session.scalars(
+                select(Employee).where(Employee.organization_id == org.id)
+            )
+        }
+        for code, supervisor_code in _SUPERVISORS.items():
+            report = employees_by_code.get(code)
+            supervisor = employees_by_code.get(supervisor_code)
+            if report is not None and supervisor is not None and report.supervisor_id is None:
+                report.supervisor_id = supervisor.id
 
         # A sample project with role requirements
         project = await session.scalar(

@@ -66,3 +66,19 @@ export async function request<T>(
   if (!response.ok) throw await toApiError(response);
   return schema.parse(await response.json());
 }
+
+/** For endpoints that return no body (HTTP 204). */
+export async function requestVoid(
+  path: string,
+  init?: RequestInit,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Correlation-Id': crypto.randomUUID(),
+      ...init?.headers,
+    },
+  });
+  if (!response.ok) throw await toApiError(response);
+}

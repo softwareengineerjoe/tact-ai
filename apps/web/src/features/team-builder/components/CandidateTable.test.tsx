@@ -16,6 +16,7 @@ const candidate: RecommendationCandidate = {
   data_freshness: '2026-09-01T08:00:00.000Z',
   warnings: [],
   recommendation_reason: 'Strong required-skill coverage.',
+  supervisor_name: 'Elena Vasquez',
 };
 
 function renderWithSession(permissions: string[]) {
@@ -48,9 +49,7 @@ describe('CandidateTable', () => {
 
   it('shows the Assign action when authorized', () => {
     renderWithSession(['team.assign']);
-    expect(
-      screen.getByRole('button', { name: 'Assign' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Assign' })).toBeInTheDocument();
   });
 
   it('hides the Assign action when not authorized', () => {

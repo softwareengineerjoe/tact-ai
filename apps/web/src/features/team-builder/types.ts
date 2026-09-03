@@ -41,3 +41,9 @@ export interface AssignInput {
   endDate: string;
   overrideReason?: string;
 }
+
+export interface RemoveInput {
+  projectId: string;
+  assignmentId: string;
+  version: number;
+}

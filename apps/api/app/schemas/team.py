@@ -42,6 +42,7 @@ class RecommendationCandidate(BaseModel):
     data_freshness: datetime | None
     warnings: list[str]
     recommendation_reason: str
+    supervisor_name: str | None = None
 
 
 class ReservationCreate(BaseModel):
@@ -84,6 +85,8 @@ class AssignmentRead(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
+    employee_display_name: str | None = None
+    supervisor_name: str | None = None
 
 
 class AssignmentCreateResult(BaseModel):

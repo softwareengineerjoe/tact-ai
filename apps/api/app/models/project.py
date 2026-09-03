@@ -17,7 +17,7 @@ from app.core.enums import (
 from app.models.base import Base
 
 if TYPE_CHECKING:
-    from app.models.employee import Skill
+    from app.models.employee import Employee, Skill
 
 
 class Project(Base):
@@ -130,6 +130,8 @@ class ProjectAssignment(Base):
     end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     override_reason: Mapped[str | None] = mapped_column(Text)
+
+    employee: Mapped[Employee] = relationship()
 
     __table_args__ = (
         Index("ix_project_assignments_org", "organization_id"),

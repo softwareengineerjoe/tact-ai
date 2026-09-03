@@ -48,6 +48,7 @@ class CapacityService:
         *,
         period_start: datetime,
         period_end: datetime,
+        exclude_assignment_id: uuid.UUID | None = None,
     ) -> Capacity:
         availability = await self._employees.list_availability(organization_id, employee.id)
         record = _select_overlapping(availability, period_start, period_end)
@@ -57,6 +58,7 @@ class CapacityService:
             employee.id,
             period_start=period_start,
             period_end=period_end,
+            exclude_assignment_id=exclude_assignment_id,
         )
         confirmed = sum(
             a.allocation_percent for a in assignments if AssignmentRepository.is_confirmed(a.status)

@@ -31,6 +31,9 @@ export function CandidateTable({
               Capacity
             </th>
             <th scope='col' className='px-4 py-2.5'>
+              Supervisor
+            </th>
+            <th scope='col' className='px-4 py-2.5'>
               Skills
             </th>
             <th scope='col' className='px-4 py-2.5 text-right'>
@@ -75,6 +78,11 @@ export function CandidateTable({
                 </td>
                 <td className='px-4 py-3 tabular-nums text-fg-body'>
                   {candidate.remaining_capacity_percent}%
+                </td>
+                <td className='px-4 py-3 text-fg-body'>
+                  {candidate.supervisor_name ?? (
+                    <span className='text-fg-muted'>—</span>
+                  )}
                 </td>
                 <td className='px-4 py-3'>
                   <div className='flex flex-wrap gap-1'>

@@ -41,6 +41,7 @@ export const RecommendationCandidateSchema = z.object({
   data_freshness: z.string().datetime().nullable(),
   warnings: z.array(z.string()),
   recommendation_reason: z.string(),
+  supervisor_name: z.string().nullable(),
 });
 
 export const RecommendationListSchema = z.array(RecommendationCandidateSchema);
@@ -60,6 +61,8 @@ export const AssignmentSchema = z.object({
   version: z.number().int().nonnegative(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
+  employee_display_name: z.string().nullable(),
+  supervisor_name: z.string().nullable(),
 });
 
 export const AssignmentListSchema = z.array(AssignmentSchema);

@@ -46,6 +46,7 @@ class ScoredCandidate:
     data_freshness: datetime | None
     warnings: list[str]
     recommendation_reason: str
+    supervisor_name: str | None
 
 
 class RecommendationService:
@@ -167,6 +168,7 @@ def _score_candidate(
         data_freshness=capacity.last_updated,
         warnings=warnings,
         recommendation_reason=reason,
+        supervisor_name=employee.supervisor.display_name if employee.supervisor else None,
     )
 
 

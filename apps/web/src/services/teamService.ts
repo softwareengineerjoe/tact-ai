@@ -1,4 +1,4 @@
-import { request } from '@/services/httpClient';
+import { request, requestVoid } from '@/services/httpClient';
 import {
   AssignmentCreateResultSchema,
   AssignmentListSchema,
@@ -9,6 +9,7 @@ import {
 import type {
   AssignInput,
   RecommendationParams,
+  RemoveInput,
   ReserveInput,
 } from '@/features/team-builder/types';
 
@@ -67,5 +68,11 @@ export const teamService = {
           override_reason: input.overrideReason ?? null,
         }),
       },
+    ),
+
+  remove: (input: RemoveInput) =>
+    requestVoid(
+      `/assignments/${input.assignmentId}?version=${input.version}`,
+      { method: 'DELETE' },
     ),
 };

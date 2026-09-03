@@ -139,9 +139,25 @@ class StubAssignmentRepo:
         self.added: list[ProjectAssignment] = []
 
     async def list_active_for_employee(  # type: ignore[no-untyped-def]
-        self, organization_id, employee_id, *, period_start, period_end
+        self,
+        organization_id,
+        employee_id,
+        *,
+        period_start,
+        period_end,
+        exclude_assignment_id=None,
     ):
-        return [a for a in self._active if a.employee_id == employee_id]
+        return [
+            a
+            for a in self._active
+            if a.employee_id == employee_id
+            and (exclude_assignment_id is None or a.id != exclude_assignment_id)
+        ]
+
+    async def find_active_for_employee_role(  # type: ignore[no-untyped-def]
+        self, organization_id, project_id, role_requirement_id, employee_id
+    ):
+        return None
 
     async def add(self, assignment):  # type: ignore[no-untyped-def]
         self.added.append(assignment)

@@ -27,9 +27,15 @@ class Employee(Base):
     employment_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default=EmploymentStatus.ACTIVE
     )
+    supervisor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("employees.id")
+    )
 
     skills: Mapped[list[EmployeeSkill]] = relationship(
         back_populates="employee", cascade="all, delete-orphan"
+    )
+    supervisor: Mapped[Employee | None] = relationship(
+        "Employee", remote_side="Employee.id", foreign_keys=[supervisor_id]
     )
 
     __table_args__ = (

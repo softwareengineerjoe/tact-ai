@@ -78,6 +78,17 @@ class AssignmentService:
         if data.expires_at <= datetime.now(data.expires_at.tzinfo):
             raise ValidationError("Reservation expiry must be in the future")
 
+        # Prevent duplicate rows: an employee already on this role cannot be
+        # reserved again (they are reserved/pending/confirmed already).
+        existing = await self._assignments.find_active_for_employee_role(
+            principal.organization_id, project_id, requirement.id, data.employee_id
+        )
+        if existing is not None:
+            raise ConflictError(
+                "This employee is already on this role "
+                f"(status: {existing.status}); remove them first to change the assignment"
+            )
+
         assignment = ProjectAssignment(
             organization_id=principal.organization_id,
             project_id=project_id,
@@ -105,11 +116,21 @@ class AssignmentService:
         if data.end_date <= data.start_date:
             raise ValidationError("Assignment end date must be after the start date")
 
+        # Reuse an existing reservation for this employee+role rather than
+        # creating a duplicate row (reserve → confirm is one lifecycle).
+        existing = await self._assignments.find_active_for_employee_role(
+            principal.organization_id, project_id, requirement.id, data.employee_id
+        )
+        if existing is not None and existing.status == AssignmentStatus.CONFIRMED:
+            raise ConflictError("This employee is already confirmed on this role")
+
         capacity = await self._capacity.compute_for_employee(
             principal.organization_id,
             employee,
             period_start=data.start_date,
             period_end=data.end_date,
+            # Exclude the reservation being confirmed so it is not double-counted.
+            exclude_assignment_id=existing.id if existing is not None else None,
         )
         warnings: list[str] = []
         would_remain = capacity.remaining_capacity_percent - data.allocation_percent
@@ -122,6 +143,17 @@ class AssignmentService:
                 )
             principal.require(Permission.TEAM_OVERRIDE_CAPACITY)
             warnings.append(f"Overallocation approved: remaining capacity would be {would_remain}%")
+
+        if existing is not None:
+            # Transition the existing reservation to CONFIRMED in place.
+            existing.status = AssignmentStatus.CONFIRMED
+            existing.allocation_percent = data.allocation_percent
+            existing.start_date = data.start_date
+            existing.end_date = data.end_date
+            existing.expires_at = None
+            existing.override_reason = data.override_reason
+            existing.version += 1
+            return AssignmentResult(assignment=existing, warnings=warnings)
 
         assignment = ProjectAssignment(
             organization_id=principal.organization_id,
@@ -166,6 +198,22 @@ class AssignmentService:
             assignment.override_reason = data.override_reason
         assignment.version += 1
         return assignment
+
+    async def remove_assignment(
+        self,
+        principal: Principal,
+        assignment_id: uuid.UUID,
+        *,
+        version: int,
+    ) -> None:
+        """Remove an employee from the team (soft delete, preserves history)."""
+        principal.require(Permission.TEAM_REMOVE)
+        assignment = await self._assignments.get(principal.organization_id, assignment_id)
+        if assignment is None:
+            raise NotFound("Assignment not found")
+        if assignment.version != version:
+            raise ConflictError("Assignment was modified by someone else")
+        await self._assignments.soft_delete(assignment)
 
     async def _require_project(self, principal: Principal, project_id: uuid.UUID) -> None:
         project = await self._projects.get(principal.organization_id, project_id)
