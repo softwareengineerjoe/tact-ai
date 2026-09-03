@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.uv/
+
+# Build output
+dist/
+build/
+*.egg-info/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage/
+htmlcov/
+.coverage
+playwright-report/
+test-results/
+
+# Local dev server logs
+apps/api/server.out.log
+apps/api/server.err.log
+*.log
