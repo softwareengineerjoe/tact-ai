@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { ProjectListPage } from '@/pages/ProjectListPage';
+import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
 import { TicketListPage } from '@/pages/TicketListPage';
 
 export const router = createBrowserRouter([
@@ -28,6 +29,14 @@ export const router = createBrowserRouter([
         element: (
           <RequirePermission permission='projects.view'>
             <ProjectListPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: '/projects/:projectId/team-builder',
+        element: (
+          <RequirePermission permission='team.recommend'>
+            <TeamBuilderPage />
           </RequirePermission>
         ),
       },

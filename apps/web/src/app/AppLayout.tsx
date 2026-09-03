@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { Toaster } from '@/components/shared';
 import { cn } from '@/utils/cn';
 
 const NAV_ITEMS = [
@@ -45,6 +46,7 @@ export function AppLayout() {
           </div>
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

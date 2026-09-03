@@ -7,14 +7,24 @@ Run:  python -m app.seed
 """
 
 import asyncio
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
 from app.api.deps import DEMO_ORGANIZATION_ID
 from app.core.db import async_session_factory
-from app.models.employee import Employee, EmployeeSkill, Skill
+from app.models.employee import (
+    Employee,
+    EmployeeAvailability,
+    EmployeeSkill,
+    Skill,
+)
 from app.models.organization import Organization
-from app.models.project import Project, ProjectRoleRequirement
+from app.models.project import (
+    Project,
+    ProjectRoleRequirement,
+    RoleRequirementSkill,
+)
 
 _SKILLS = [
     ("Python", "Backend"),
@@ -165,6 +175,88 @@ async def seed() -> None:
                     ),
                 ]
             )
+            await session.flush()
+
+        # Availability so employees have computable capacity (idempotent).
+        # Unknown availability is never treated as available (MASTER FR-006),
+        # so the demo needs explicit records to surface recommendations.
+        period_start = datetime(2026, 10, 1, tzinfo=UTC)
+        period_end = datetime(2026, 12, 31, tzinfo=UTC)
+        availability_by_code = {
+            "EMP-1001": 100,
+            "EMP-1002": 60,
+            "EMP-1003": 30,
+            "EMP-1004": 100,
+            "EMP-1005": 80,
+            "EMP-1006": 50,
+        }
+        for code, base in availability_by_code.items():
+            employee = await session.scalar(
+                select(Employee).where(
+                    Employee.organization_id == org.id,
+                    Employee.employee_code == code,
+                )
+            )
+            if employee is None:
+                continue
+            existing_avail = await session.scalar(
+                select(EmployeeAvailability).where(
+                    EmployeeAvailability.organization_id == org.id,
+                    EmployeeAvailability.employee_id == employee.id,
+                )
+            )
+            if existing_avail is None:
+                session.add(
+                    EmployeeAvailability(
+                        organization_id=org.id,
+                        employee_id=employee.id,
+                        period_start=period_start,
+                        period_end=period_end,
+                        status="available",
+                        base_capacity_percent=base,
+                        data_source="seed",
+                    )
+                )
+
+        # Required/preferred skills on the Backend Developer role (idempotent).
+        backend_reqs = list(
+            await session.scalars(
+                select(ProjectRoleRequirement).where(
+                    ProjectRoleRequirement.organization_id == org.id,
+                    ProjectRoleRequirement.project_id == project.id,
+                    ProjectRoleRequirement.role_name == "Backend Developer",
+                )
+            )
+        )
+        for requirement in backend_reqs:
+            has_skills = await session.scalar(
+                select(RoleRequirementSkill).where(
+                    RoleRequirementSkill.requirement_id == requirement.id
+                )
+            )
+            if has_skills is None:
+                session.add_all(
+                    [
+                        RoleRequirementSkill(
+                            organization_id=org.id,
+                            requirement_id=requirement.id,
+                            skill_id=skills_by_name["Python"].id,
+                            is_preferred=False,
+                        ),
+                        RoleRequirementSkill(
+                            organization_id=org.id,
+                            requirement_id=requirement.id,
+                            skill_id=skills_by_name["FastAPI"].id,
+                            is_preferred=False,
+                        ),
+                        RoleRequirementSkill(
+                            organization_id=org.id,
+                            requirement_id=requirement.id,
+                            skill_id=skills_by_name["PostgreSQL"].id,
+                            is_preferred=True,
+                        ),
+                    ]
+                )
 
         await session.commit()
     print("Seed complete.")

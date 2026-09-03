@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+
+import { PermissionGate } from '@/components/shared';
 import { cn } from '@/utils/cn';
 import type { Project } from '@/features/projects/types';
 import { ProjectStatusBadge } from './ProjectStatusBadge';
@@ -25,9 +28,20 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
           {project.description}
         </p>
       ) : null}
-      <p className='mt-3 text-xs uppercase tracking-wide text-fg-muted'>
-        Priority: {project.priority}
-      </p>
+      <div className='mt-3 flex items-center justify-between'>
+        <p className='text-xs uppercase tracking-wide text-fg-muted'>
+          Priority: {project.priority}
+        </p>
+        <PermissionGate permission='team.recommend'>
+          <Link
+            to={`/projects/${project.id}/team-builder`}
+            className='text-xs font-medium text-primary hover:underline'
+          >
+            Team Builder →
+          </Link>
+        </PermissionGate>
+      </div>
     </article>
   );
 }
+
