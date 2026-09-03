@@ -49,3 +49,16 @@ class AvailabilityStatus(StrEnum):
     OVERALLOCATED = "overallocated"
     UNAVAILABLE = "unavailable"
     UNKNOWN = "unknown"
+
+
+class AssignmentStatus(StrEnum):
+    RECOMMENDED = "recommended"
+    RESERVED = "reserved"
+    PENDING_APPROVAL = "pending_approval"
+    CONFIRMED = "confirmed"
+    ACTIVE = "active"
+    ENDED = "ended"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+    DECLINED = "declined"
+    CANCELLED = "cancelled"

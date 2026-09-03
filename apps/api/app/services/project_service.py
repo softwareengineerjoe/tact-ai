@@ -3,7 +3,11 @@
 import uuid
 
 from app.core.exceptions import ConflictError, NotFound
-from app.models.project import Project, ProjectRoleRequirement
+from app.models.project import (
+    Project,
+    ProjectRoleRequirement,
+    RoleRequirementSkill,
+)
 from app.repositories.project_repository import ProjectRepository
 from app.schemas.common import PageParams
 from app.schemas.project import (
@@ -101,6 +105,26 @@ class ProjectService:
             allocation_percent=data.allocation_percent,
             description=data.description,
         )
+        for skill_name in data.required_skills:
+            skill = await self._repository.ensure_skill(principal.organization_id, skill_name)
+            requirement.required_skills.append(
+                RoleRequirementSkill(
+                    organization_id=principal.organization_id,
+                    skill_id=skill.id,
+                    skill=skill,
+                    is_preferred=False,
+                )
+            )
+        for skill_name in data.preferred_skills:
+            skill = await self._repository.ensure_skill(principal.organization_id, skill_name)
+            requirement.required_skills.append(
+                RoleRequirementSkill(
+                    organization_id=principal.organization_id,
+                    skill_id=skill.id,
+                    skill=skill,
+                    is_preferred=True,
+                )
+            )
         return await self._repository.add_requirement(requirement)
 
     async def update_requirement(

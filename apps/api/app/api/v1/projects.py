@@ -89,7 +89,7 @@ async def list_project_requirements(
     service: ProjectService = Depends(get_project_service),
 ) -> list[ProjectRoleRequirementRead]:
     items = await service.list_requirements(principal, project_id)
-    return [ProjectRoleRequirementRead.model_validate(r) for r in items]
+    return [ProjectRoleRequirementRead.from_model(r) for r in items]
 
 
 @router.post(
@@ -104,4 +104,4 @@ async def create_project_requirement(
     service: ProjectService = Depends(get_project_service),
 ) -> ProjectRoleRequirementRead:
     requirement = await service.add_requirement(principal, project_id, payload)
-    return ProjectRoleRequirementRead.model_validate(requirement)
+    return ProjectRoleRequirementRead.from_model(requirement)

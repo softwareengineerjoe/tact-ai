@@ -12,7 +12,12 @@ from app.models.employee import (
     Skill,
 )
 from app.models.organization import Organization
-from app.models.project import Project, ProjectRoleRequirement
+from app.models.project import (
+    Project,
+    ProjectAssignment,
+    ProjectRoleRequirement,
+    RoleRequirementSkill,
+)
 
 __all__ = [
     "Base",
@@ -22,5 +27,7 @@ __all__ = [
     "EmployeeSkill",
     "Skill",
     "Project",
+    "ProjectAssignment",
     "ProjectRoleRequirement",
+    "RoleRequirementSkill",
 ]

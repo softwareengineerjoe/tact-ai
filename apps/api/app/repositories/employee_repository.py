@@ -73,6 +73,19 @@ class EmployeeRepository:
         await self._session.flush()
         return employee
 
+    async def list_with_skills(self, organization_id: uuid.UUID) -> list[Employee]:
+        """All non-deleted employees with skills eager-loaded (recommendations)."""
+        stmt = (
+            select(Employee)
+            .where(
+                Employee.organization_id == organization_id,
+                Employee.deleted_at.is_(None),
+            )
+            .options(selectinload(Employee.skills).selectinload(EmployeeSkill.skill))
+            .order_by(Employee.display_name.asc())
+        )
+        return list(await self._session.scalars(stmt))
+
     # --- Skills (MASTER FR-004) ---
 
     async def list_skills(

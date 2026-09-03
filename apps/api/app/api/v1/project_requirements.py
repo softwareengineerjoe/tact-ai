@@ -24,4 +24,4 @@ async def update_project_requirement(
     service: ProjectService = Depends(get_project_service),
 ) -> ProjectRoleRequirementRead:
     requirement = await service.update_requirement(principal, requirement_id, payload)
-    return ProjectRoleRequirementRead.model_validate(requirement)
+    return ProjectRoleRequirementRead.from_model(requirement)

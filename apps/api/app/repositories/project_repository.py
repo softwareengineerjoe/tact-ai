@@ -4,8 +4,14 @@ import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.models.project import Project, ProjectRoleRequirement
+from app.models.employee import Skill
+from app.models.project import (
+    Project,
+    ProjectRoleRequirement,
+    RoleRequirementSkill,
+)
 
 
 class ProjectRepository:
@@ -69,6 +75,11 @@ class ProjectRepository:
                 ProjectRoleRequirement.project_id == project_id,
                 ProjectRoleRequirement.deleted_at.is_(None),
             )
+            .options(
+                selectinload(ProjectRoleRequirement.required_skills).selectinload(
+                    RoleRequirementSkill.skill
+                )
+            )
             .order_by(ProjectRoleRequirement.created_at.asc())
         )
         return list(await self._session.scalars(stmt))
@@ -76,13 +87,37 @@ class ProjectRepository:
     async def get_requirement(
         self, organization_id: uuid.UUID, requirement_id: uuid.UUID
     ) -> ProjectRoleRequirement | None:
-        stmt = select(ProjectRoleRequirement).where(
-            ProjectRoleRequirement.id == requirement_id,
-            ProjectRoleRequirement.organization_id == organization_id,
-            ProjectRoleRequirement.deleted_at.is_(None),
+        stmt = (
+            select(ProjectRoleRequirement)
+            .where(
+                ProjectRoleRequirement.id == requirement_id,
+                ProjectRoleRequirement.organization_id == organization_id,
+                ProjectRoleRequirement.deleted_at.is_(None),
+            )
+            .options(
+                selectinload(ProjectRoleRequirement.required_skills).selectinload(
+                    RoleRequirementSkill.skill
+                )
+            )
         )
         result: ProjectRoleRequirement | None = await self._session.scalar(stmt)
         return result
+
+    async def ensure_skill(
+        self, organization_id: uuid.UUID, name: str, category: str | None = None
+    ) -> Skill:
+        """Return an existing skill by name (org-scoped) or create it."""
+        stmt = select(Skill).where(
+            Skill.organization_id == organization_id,
+            Skill.name == name,
+            Skill.deleted_at.is_(None),
+        )
+        skill = await self._session.scalar(stmt)
+        if skill is None:
+            skill = Skill(organization_id=organization_id, name=name, category=category)
+            self._session.add(skill)
+            await self._session.flush()
+        return skill
 
     async def add_requirement(self, requirement: ProjectRoleRequirement) -> ProjectRoleRequirement:
         self._session.add(requirement)

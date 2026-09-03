@@ -2,10 +2,14 @@
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.enums import ProjectPriority, ProjectStatus, TicketProvider
+
+if TYPE_CHECKING:
+    from app.models.project import ProjectRoleRequirement
 
 
 class ProjectCreate(BaseModel):
@@ -59,6 +63,8 @@ class ProjectRoleRequirementCreate(BaseModel):
     headcount: int = Field(default=1, ge=1)
     allocation_percent: int = Field(default=100, ge=0, le=100)
     description: str | None = None
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
 
 
 class ProjectRoleRequirementUpdate(BaseModel):
@@ -79,6 +85,28 @@ class ProjectRoleRequirementRead(BaseModel):
     headcount: int
     allocation_percent: int
     description: str | None
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
     version: int
     created_at: datetime
     updated_at: datetime
+
+    @classmethod
+    def from_model(cls, requirement: ProjectRoleRequirement) -> ProjectRoleRequirementRead:
+        """Map the ORM requirement, splitting skills by preferred flag."""
+        required = [rs.skill.name for rs in requirement.required_skills if not rs.is_preferred]
+        preferred = [rs.skill.name for rs in requirement.required_skills if rs.is_preferred]
+        return cls(
+            id=requirement.id,
+            organization_id=requirement.organization_id,
+            project_id=requirement.project_id,
+            role_name=requirement.role_name,
+            headcount=requirement.headcount,
+            allocation_percent=requirement.allocation_percent,
+            description=requirement.description,
+            required_skills=required,
+            preferred_skills=preferred,
+            version=requirement.version,
+            created_at=requirement.created_at,
+            updated_at=requirement.updated_at,
+        )
