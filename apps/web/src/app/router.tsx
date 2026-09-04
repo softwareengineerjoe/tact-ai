@@ -6,6 +6,7 @@ import { AssistantPage } from '@/pages/AssistantPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
+import { CreateProjectPage } from '@/pages/CreateProjectPage';
 import { ProjectListPage } from '@/pages/ProjectListPage';
 import { ProjectSetupPage } from '@/pages/ProjectSetupPage';
 import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
@@ -30,6 +31,14 @@ export const router = createBrowserRouter([
         element: (
           <RequirePermission permission='projects.view'>
             <ProjectListPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: '/projects/new',
+        element: (
+          <RequirePermission permission='projects.create'>
+            <CreateProjectPage />
           </RequirePermission>
         ),
       },
