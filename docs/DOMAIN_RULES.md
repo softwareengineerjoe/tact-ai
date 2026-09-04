@@ -27,3 +27,21 @@ wins unless an approved ADR changes it.
 * Overallocation requires an explicit permission and override reason.
 * Closing a project releases future allocations.
 * No physical deletion of projects, feedback, assignments, or audit records.
+
+## Intentional Simplifications (current implementation)
+
+These are deliberate, documented deviations kept simple until a later phase
+needs them (YAGNI). They are noted here so they are not mistaken for omissions.
+
+* **Approved leave is not yet a distinct capacity input (FR-006).** The capacity
+  formula lists Approved Leave as a separate deduction, but leave is not modeled
+  as its own entity today. `approved_leave_percent` is always `0`; leave impact
+  is instead expressed through the employee's `base_capacity_percent` on their
+  availability record. A dedicated `LeavePeriod` deduction can be added when the
+  product needs calendar/Workday-sourced leave.
+* **Recommendation rejection reasons are not persisted (FR-007).** Capacity
+  *override* reasons are captured on the assignment, but a rejected/overridden
+  *recommendation* reason (the `RecommendationDecision` / `RecommendationOverride`
+  models) is not stored yet. This is planned alongside the AI assistant work in
+  Sprint 5, where recommendation decisions become auditable.
+
