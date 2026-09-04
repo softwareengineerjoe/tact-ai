@@ -394,4 +394,3 @@ async def test_delete_version_conflict() -> None:
     principal = _principal(Permission.FEEDBACK_EDIT)
     with pytest.raises(ConflictError):
         await service.delete(principal, item.id, version=item.version + 5)
-

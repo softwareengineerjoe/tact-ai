@@ -37,9 +37,7 @@ describe('PeopleTable', () => {
     const employee = makeEmployee({ id: 'e2', display_name: 'Daniel Cruz' });
     render(<PeopleTable employees={[employee]} onSelect={onSelect} />);
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Daniel Cruz' }),
-    );
+    await userEvent.click(screen.getByRole('button', { name: 'Daniel Cruz' }));
 
     expect(onSelect).toHaveBeenCalledWith(employee);
   });

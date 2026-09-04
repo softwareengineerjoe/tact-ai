@@ -112,3 +112,10 @@ class FeedbackStatus(StrEnum):
     SHARED = "shared"
     ACKNOWLEDGED = "acknowledged"
     CLOSED = "closed"
+
+
+class MessageRole(StrEnum):
+    """Author of a chat message (MASTER 15.8)."""
+
+    USER = "user"
+    ASSISTANT = "assistant"

@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/shared';
+import { AssistantContainer } from '@/features/assistant';
 
 export function AssistantPage() {
   return (
@@ -6,11 +7,9 @@ export function AssistantPage() {
       <PageHeader
         id='assistant-title'
         title='TACT AI Assistant'
-        description='Ask about projects, people, capacity, and tickets.'
+        description='Ask about projects, people, capacity, and tickets. Answers use only data you are authorized to see.'
       />
-      <p className='text-sm text-fg-muted'>
-        The read-only assistant arrives in Sprint 5.
-      </p>
+      <AssistantContainer />
     </main>
   );
 }

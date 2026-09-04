@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    assistant,
     feedback,
     me,
     people,
@@ -20,3 +21,4 @@ api_router.include_router(people.router)
 api_router.include_router(team.router)
 api_router.include_router(tickets.router)
 api_router.include_router(feedback.router)
+api_router.include_router(assistant.router)

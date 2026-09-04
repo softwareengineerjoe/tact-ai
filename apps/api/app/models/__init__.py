@@ -6,6 +6,12 @@ Alembic autogeneration and metadata create.
 
 from app.models.audit import AuditLog
 from app.models.base import Base
+from app.models.chat import (
+    AIToolExecution,
+    ChatMessage,
+    ChatSession,
+    MessageCitation,
+)
 from app.models.employee import (
     Employee,
     EmployeeAvailability,
@@ -46,4 +52,8 @@ __all__ = [
     "FeedbackAcknowledgement",
     "FeedbackAccessLog",
     "AuditLog",
+    "ChatSession",
+    "ChatMessage",
+    "AIToolExecution",
+    "MessageCitation",
 ]

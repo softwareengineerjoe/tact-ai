@@ -11,9 +11,16 @@ from collections.abc import Callable
 from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.provider import (
+    AgentProvider,
+    FoundryAgentProvider,
+    LocalDeterministicProvider,
+)
+from app.core.config import get_settings
 from app.core.db import get_session
 from app.repositories.assignment_repository import AssignmentRepository
 from app.repositories.audit_repository import AuditRepository
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.feedback_repository import FeedbackRepository
 from app.repositories.project_repository import ProjectRepository
@@ -22,6 +29,7 @@ from app.schemas.common import PageParams
 from app.security.permissions import Permission
 from app.security.principal import Principal
 from app.services.assignment_service import AssignmentService
+from app.services.assistant_service import AssistantService
 from app.services.capacity_service import CapacityService
 from app.services.employee_service import EmployeeService
 from app.services.feedback_service import FeedbackService
@@ -118,4 +126,31 @@ def get_feedback_service(
         ProjectRepository(session),
         AssignmentRepository(session),
         AuditRepository(session),
+    )
+
+
+def get_agent_provider() -> AgentProvider:
+    """Choose the primary Foundry provider when configured, else the local
+    deterministic provider (ADR 0001). Keeps tests/CI credential-free."""
+    settings = get_settings()
+    if settings.ai_foundry_configured:
+        return FoundryAgentProvider(
+            endpoint=settings.ai_foundry_endpoint,
+            api_key=settings.ai_foundry_api_key,
+            api_version=settings.ai_foundry_api_version,
+            model=settings.ai_model_deployment,
+        )
+    return LocalDeterministicProvider()
+
+
+def get_assistant_service(
+    session: AsyncSession = Depends(get_session),
+) -> AssistantService:
+    return AssistantService(
+        ChatRepository(session),
+        get_agent_provider(),
+        get_project_service(session),
+        get_employee_service(session),
+        get_ticket_service(session),
+        get_feedback_service(session),
     )

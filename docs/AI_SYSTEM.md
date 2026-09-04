@@ -11,6 +11,22 @@ with the master, the master wins unless an approved ADR changes it.
 * Platform: Microsoft Foundry Agent Service.
 * Specialized agents are a post-production, future addition (MASTER section 15.9).
 
+## Provider Selection (ADR 0001)
+
+The orchestrator runs behind an `AgentProvider` interface with two
+implementations of the same read-only contract:
+
+* **`FoundryAgentProvider`** — primary. Calls the Foundry
+  `/openai/v1/responses` endpoint (model `gpt-4.1`) with a bounded tool-calling
+  loop. Used whenever an endpoint + API key are configured.
+* **`LocalDeterministicProvider`** — rule-based, no-network fallback used for
+  tests, CI, offline development, and automatic recovery if the Foundry call
+  fails. It answers strictly from the same secured tool results.
+
+Selection is configuration-driven (`ai_foundry_endpoint` / `ai_foundry_api_key`).
+This does not change the chosen platform — Foundry remains the production runtime
+and model host. See [adr/0001-ai-provider-abstraction.md](adr/0001-ai-provider-abstraction.md).
+
 ## Tooling
 
 * Read-only tools — MASTER section 15.3.
