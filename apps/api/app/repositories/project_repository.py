@@ -64,6 +64,12 @@ class ProjectRepository:
         await self._session.flush()
         return project
 
+    async def soft_delete(self, project: Project) -> None:
+        """Soft-delete a project, preserving history (MASTER 21)."""
+        project.deleted_at = datetime.now(UTC)
+        project.version += 1
+        await self._session.flush()
+
     # --- Role requirements (MASTER FR-003) ---
 
     async def list_requirements(

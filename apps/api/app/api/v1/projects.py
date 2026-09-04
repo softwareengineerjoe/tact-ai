@@ -79,6 +79,15 @@ async def update_project(
     return ProjectRead.model_validate(project)
 
 
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    project_id: uuid.UUID,
+    principal: Principal = Depends(require_permission(Permission.PROJECTS_ARCHIVE)),
+    service: ProjectService = Depends(get_project_service),
+) -> None:
+    await service.delete_project(principal, project_id)
+
+
 @router.get(
     "/{project_id}/requirements",
     response_model=list[ProjectRoleRequirementRead],

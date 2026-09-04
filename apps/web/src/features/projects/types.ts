@@ -27,3 +27,11 @@ export interface UpdateProjectInput {
   expectedTeamSize: number | null;
   version: number;
 }
+
+export interface UpdateProjectDetailsInput {
+  name: string;
+  description: string | null;
+  businessObjective: string | null;
+  priority: ProjectPriority;
+  version: number;
+}

@@ -51,6 +51,7 @@ class StubProjectRepo:
         self.requirement: object | None = None
         self.requirements: list[object] = []
         self.added_requirements: list[object] = []
+        self.soft_deleted: list[Project] = []
 
     async def get(self, organization_id: uuid.UUID, project_id: uuid.UUID) -> Project | None:
         if self.project is None:
@@ -62,6 +63,9 @@ class StubProjectRepo:
     async def add(self, project: Project) -> Project:
         self.added.append(project)
         return project
+
+    async def soft_delete(self, project: Project) -> None:
+        self.soft_deleted.append(project)
 
     async def list_requirements(self, organization_id, project_id):  # type: ignore[no-untyped-def]
         return list(self.requirements)
@@ -154,6 +158,34 @@ async def test_update_project_increments_version() -> None:
     )
     assert updated.name == "Atlas v2"
     assert updated.version == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_project_requires_archive_permission() -> None:
+    project = Project(organization_id=ORG_A, name="Atlas")
+    service = ProjectService(StubProjectRepo(project))  # type: ignore[arg-type]
+    editor = _principal(Permission.PROJECTS_EDIT)
+    with pytest.raises(PermissionDenied):
+        await service.delete_project(editor, uuid.uuid4())
+
+
+@pytest.mark.asyncio
+async def test_delete_project_soft_deletes() -> None:
+    project = Project(organization_id=ORG_A, name="Atlas")
+    repo = StubProjectRepo(project)
+    service = ProjectService(repo)  # type: ignore[arg-type]
+    archiver = _principal(Permission.PROJECTS_ARCHIVE)
+    await service.delete_project(archiver, uuid.uuid4())
+    assert repo.soft_deleted == [project]
+
+
+@pytest.mark.asyncio
+async def test_delete_project_enforces_org_isolation() -> None:
+    other = Project(organization_id=ORG_B, name="Secret")
+    service = ProjectService(StubProjectRepo(other))  # type: ignore[arg-type]
+    archiver = _principal(Permission.PROJECTS_ARCHIVE, org=ORG_A)
+    with pytest.raises(NotFound):
+        await service.delete_project(archiver, uuid.uuid4())
 
 
 @pytest.mark.asyncio

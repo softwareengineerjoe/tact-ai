@@ -1,8 +1,9 @@
-import { request } from '@/services/httpClient';
+import { request, requestVoid } from '@/services/httpClient';
 import { ProjectListSchema, ProjectSchema } from '@/features/projects/schemas';
 import type {
   CreateProjectInput,
   ProjectListParams,
+  UpdateProjectDetailsInput,
   UpdateProjectInput,
 } from '@/features/projects/types';
 
@@ -39,4 +40,19 @@ export const projectsService = {
         version: input.version,
       }),
     }),
+
+  updateDetails: (projectId: string, input: UpdateProjectDetailsInput) =>
+    request(`/projects/${projectId}`, ProjectSchema, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: input.name,
+        description: input.description,
+        business_objective: input.businessObjective,
+        priority: input.priority,
+        version: input.version,
+      }),
+    }),
+
+  remove: (projectId: string) =>
+    requestVoid(`/projects/${projectId}`, { method: 'DELETE' }),
 };

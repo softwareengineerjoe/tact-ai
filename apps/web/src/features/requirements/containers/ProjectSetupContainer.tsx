@@ -10,7 +10,14 @@ import {
   PermissionGate,
   toast,
 } from '@/components/shared';
-import { useProject, useUpdateProject } from '@/features/projects';
+import {
+  ProjectDetailsForm,
+  useDeleteProject,
+  useProject,
+  useUpdateProject,
+  useUpdateProjectDetails,
+} from '@/features/projects';
+import type { UpdateProjectDetailsInput } from '@/features/projects';
 import { useProjectRequirements } from '@/features/team-builder';
 import type { RoleRequirement } from '@/features/team-builder/types';
 import type { RequirementFormValues } from '@/features/requirements/schemas';
@@ -44,6 +51,8 @@ export function ProjectSetupContainer({
   const requirementsQuery = useProjectRequirements(projectId);
 
   const updateProject = useUpdateProject(projectId);
+  const updateDetails = useUpdateProjectDetails(projectId);
+  const deleteProject = useDeleteProject();
   const createRequirement = useCreateRequirement(projectId);
   const updateRequirement = useUpdateRequirement(projectId);
   const deleteRequirement = useDeleteRequirement(projectId);
@@ -53,6 +62,7 @@ export function ProjectSetupContainer({
   const [pendingDelete, setPendingDelete] = useState<RoleRequirement | null>(
     null,
   );
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
 
   if (projectQuery.isPending || requirementsQuery.isPending) {
     return (
@@ -79,12 +89,33 @@ export function ProjectSetupContainer({
   const project = projectQuery.data;
   const requirements = requirementsQuery.data;
 
+  const handleSaveDetails = (input: UpdateProjectDetailsInput) => {
+    updateDetails.mutate(input, {
+      onSuccess: () => toast.success('Project details updated'),
+      onError: (error) => toast.error(error.message),
+    });
+  };
+
   const handleSaveSchedule = (
     input: Parameters<typeof updateProject.mutate>[0],
   ) => {
     updateProject.mutate(input, {
       onSuccess: () => toast.success('Project schedule updated'),
       onError: (error) => toast.error(error.message),
+    });
+  };
+
+  const handleDeleteProject = () => {
+    deleteProject.mutate(projectId, {
+      onSuccess: () => {
+        toast.success('Project deleted');
+        setConfirmDeleteProject(false);
+        void navigate('/projects');
+      },
+      onError: (error) => {
+        toast.error(error.message);
+        setConfirmDeleteProject(false);
+      },
     });
   };
 
@@ -125,9 +156,34 @@ export function ProjectSetupContainer({
 
   return (
     <div className='space-y-8'>
+      <section aria-labelledby='details-heading'>
+        <h2 id='details-heading' className='text-lg font-semibold text-fg'>
+          Project details
+        </h2>
+        <p className='mt-1 text-sm text-fg-muted'>
+          Name, description, objective, and priority for {project.name}.
+        </p>
+        <div className='mt-4 rounded-lg border border-border bg-surface p-4 shadow-xs'>
+          <PermissionGate
+            permission='projects.edit'
+            fallback={
+              <p className='text-sm text-fg-muted'>
+                You do not have permission to edit this project.
+              </p>
+            }
+          >
+            <ProjectDetailsForm
+              project={project}
+              isPending={updateDetails.isPending}
+              onSubmit={handleSaveDetails}
+            />
+          </PermissionGate>
+        </div>
+      </section>
+
       <section aria-labelledby='schedule-heading'>
         <h2 id='schedule-heading' className='text-lg font-semibold text-fg'>
-          {project.name} — schedule
+          Schedule
         </h2>
         <p className='mt-1 text-sm text-fg-muted'>
           These dates and team size drive staffing and capacity checks.
@@ -224,6 +280,30 @@ export function ProjectSetupContainer({
         )}
       </section>
 
+      <PermissionGate permission='projects.archive'>
+        <section
+          aria-labelledby='danger-heading'
+          className='rounded-lg border border-danger/30 bg-surface p-4'
+        >
+          <h2 id='danger-heading' className='text-lg font-semibold text-fg'>
+            Danger zone
+          </h2>
+          <div className='mt-2 flex flex-wrap items-center justify-between gap-3'>
+            <p className='max-w-prose text-sm text-fg-muted'>
+              Deleting archives the project and releases its allocations. History
+              is preserved and it can be restored by an administrator.
+            </p>
+            <button
+              type='button'
+              onClick={() => setConfirmDeleteProject(true)}
+              className='h-10 rounded-md border border-danger px-4 text-sm font-medium text-danger hover:bg-danger/10'
+            >
+              Delete project
+            </button>
+          </div>
+        </section>
+      </PermissionGate>
+
       <div className='flex items-center justify-between gap-2 border-t border-border pt-4'>
         <button
           type='button'
@@ -255,6 +335,18 @@ export function ProjectSetupContainer({
         isPending={deleteRequirement.isPending}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteProject}
+        title={`Delete ${project.name}?`}
+        description='This archives the project and releases its future allocations. History is preserved.'
+        confirmLabel='Delete project'
+        cancelLabel='Keep project'
+        tone='danger'
+        isPending={deleteProject.isPending}
+        onConfirm={handleDeleteProject}
+        onCancel={() => setConfirmDeleteProject(false)}
       />
     </div>
   );

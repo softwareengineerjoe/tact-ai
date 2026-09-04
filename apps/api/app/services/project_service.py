@@ -80,6 +80,13 @@ class ProjectService:
         project.version += 1
         return project
 
+    async def delete_project(self, principal: Principal, project_id: uuid.UUID) -> None:
+        principal.require(Permission.PROJECTS_ARCHIVE)
+        project = await self._repository.get(principal.organization_id, project_id)
+        if project is None:
+            raise NotFound("Project not found")
+        await self._repository.soft_delete(project)
+
     # --- Role requirements (MASTER FR-003) ---
 
     async def list_requirements(
