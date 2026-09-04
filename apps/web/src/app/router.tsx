@@ -9,6 +9,7 @@ import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { CreateProjectPage } from '@/pages/CreateProjectPage';
 import { ProjectListPage } from '@/pages/ProjectListPage';
 import { ProjectSetupPage } from '@/pages/ProjectSetupPage';
+import { ProjectFeedbackPage } from '@/pages/ProjectFeedbackPage';
 import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
 import { TicketListPage } from '@/pages/TicketListPage';
 
@@ -55,6 +56,14 @@ export const router = createBrowserRouter([
         element: (
           <RequirePermission permission='projects.edit'>
             <ProjectSetupPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: '/projects/:projectId/feedback',
+        element: (
+          <RequirePermission permission='feedback.view_shared'>
+            <ProjectFeedbackPage />
           </RequirePermission>
         ),
       },
