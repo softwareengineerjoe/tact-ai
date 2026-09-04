@@ -167,8 +167,9 @@ class FoundryAgentProvider:
             )
 
     async def _respond(self, ctx: ToolContext, question: str) -> AgentAnswer:
+        # The system prompt goes in the top-level ``instructions`` field; the
+        # ``/responses`` API rejects a bare ``system`` role input item.
         input_items: list[dict[str, Any]] = [
-            {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": question},
         ]
         citations: list[Citation] = []
@@ -180,12 +181,15 @@ class FoundryAgentProvider:
             "api-key": self._api_key,
             "Content-Type": "application/json",
         }
-        params = {"api-version": self._api_version}
+        # The newer Foundry ``/openai/v1/`` path rejects the ``api-version``
+        # query parameter; only the legacy ``/openai/deployments`` path needs it.
+        params = {} if "/openai/v1/" in self._endpoint else {"api-version": self._api_version}
 
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             for _ in range(self._max_tool_turns):
                 payload = {
                     "model": self._model,
+                    "instructions": _SYSTEM_PROMPT,
                     "input": input_items,
                     "tools": tool_specs(),
                 }
