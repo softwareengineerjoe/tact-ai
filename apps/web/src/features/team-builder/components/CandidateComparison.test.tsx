@@ -37,7 +37,9 @@ const daniel = makeCandidate({
 
 describe('CandidateComparison', () => {
   it('shows each compared candidate as a column with their scores', () => {
-    render(<CandidateComparison candidates={[maria, daniel]} onClear={() => {}} />);
+    render(
+      <CandidateComparison candidates={[maria, daniel]} onClear={() => {}} />,
+    );
 
     expect(screen.getByText('Comparing 2 candidates')).toBeInTheDocument();
     expect(
@@ -51,7 +53,9 @@ describe('CandidateComparison', () => {
   });
 
   it('surfaces matched, missing skills, and warnings', () => {
-    render(<CandidateComparison candidates={[maria, daniel]} onClear={() => {}} />);
+    render(
+      <CandidateComparison candidates={[maria, daniel]} onClear={() => {}} />,
+    );
 
     // FastAPI appears as Maria's matched skill and Daniel's missing skill.
     expect(screen.getAllByText('FastAPI')).toHaveLength(2);
@@ -61,7 +65,9 @@ describe('CandidateComparison', () => {
 
   it('clears the comparison when requested', async () => {
     const onClear = vi.fn();
-    render(<CandidateComparison candidates={[maria, daniel]} onClear={onClear} />);
+    render(
+      <CandidateComparison candidates={[maria, daniel]} onClear={onClear} />,
+    );
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Clear comparison' }),

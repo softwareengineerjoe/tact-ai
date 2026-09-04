@@ -85,15 +85,15 @@ export function CreateTicketDialog({
         aria-labelledby='create-ticket-title'
         className='relative w-full max-w-lg rounded-lg border border-border bg-surface p-6 shadow-lg'
       >
-        <h2
-          id='create-ticket-title'
-          className='text-lg font-semibold text-fg'
-        >
+        <h2 id='create-ticket-title' className='text-lg font-semibold text-fg'>
           New ticket
         </h2>
         <form onSubmit={handleSubmit} noValidate className='mt-4 space-y-4'>
           <div>
-            <label htmlFor='ticket-project' className='text-sm font-medium text-fg-body'>
+            <label
+              htmlFor='ticket-project'
+              className='text-sm font-medium text-fg-body'
+            >
               Project
             </label>
             <select
@@ -102,7 +102,9 @@ export function CreateTicketDialog({
               onChange={(event) => setProjectId(event.target.value)}
               className={cn(inputClass, 'mt-1 h-10')}
             >
-              {projects.length === 0 ? <option value=''>No projects</option> : null}
+              {projects.length === 0 ? (
+                <option value=''>No projects</option>
+              ) : null}
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -112,7 +114,10 @@ export function CreateTicketDialog({
           </div>
 
           <div>
-            <label htmlFor='ticket-title' className='text-sm font-medium text-fg-body'>
+            <label
+              htmlFor='ticket-title'
+              className='text-sm font-medium text-fg-body'
+            >
               Title
             </label>
             <input
@@ -125,7 +130,10 @@ export function CreateTicketDialog({
           </div>
 
           <div>
-            <label htmlFor='ticket-desc' className='text-sm font-medium text-fg-body'>
+            <label
+              htmlFor='ticket-desc'
+              className='text-sm font-medium text-fg-body'
+            >
               Description <span className='text-fg-muted'>(optional)</span>
             </label>
             <textarea
@@ -139,13 +147,18 @@ export function CreateTicketDialog({
 
           <div className='grid gap-4 sm:grid-cols-3'>
             <div>
-              <label htmlFor='ticket-type' className='text-sm font-medium text-fg-body'>
+              <label
+                htmlFor='ticket-type'
+                className='text-sm font-medium text-fg-body'
+              >
                 Type
               </label>
               <select
                 id='ticket-type'
                 value={ticketType}
-                onChange={(event) => setTicketType(event.target.value as TicketType)}
+                onChange={(event) =>
+                  setTicketType(event.target.value as TicketType)
+                }
                 className={cn(inputClass, 'mt-1 h-10')}
               >
                 {TYPES.map((type) => (
@@ -156,13 +169,18 @@ export function CreateTicketDialog({
               </select>
             </div>
             <div>
-              <label htmlFor='ticket-priority' className='text-sm font-medium text-fg-body'>
+              <label
+                htmlFor='ticket-priority'
+                className='text-sm font-medium text-fg-body'
+              >
                 Priority
               </label>
               <select
                 id='ticket-priority'
                 value={priority}
-                onChange={(event) => setPriority(event.target.value as TicketPriority)}
+                onChange={(event) =>
+                  setPriority(event.target.value as TicketPriority)
+                }
                 className={cn(inputClass, 'mt-1 h-10')}
               >
                 {PRIORITIES.map((value) => (
@@ -173,7 +191,10 @@ export function CreateTicketDialog({
               </select>
             </div>
             <div>
-              <label htmlFor='ticket-points' className='text-sm font-medium text-fg-body'>
+              <label
+                htmlFor='ticket-points'
+                className='text-sm font-medium text-fg-body'
+              >
                 Story points
               </label>
               <input

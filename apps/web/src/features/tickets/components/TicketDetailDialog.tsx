@@ -2,10 +2,7 @@ import { useState } from 'react';
 
 import { cn } from '@/utils/cn';
 import { PermissionGate } from '@/components/shared';
-import type {
-  TicketDetail,
-  TicketStatus,
-} from '@/features/tickets/types';
+import type { TicketDetail, TicketStatus } from '@/features/tickets/types';
 import { TicketStatusBadge } from './TicketStatusBadge';
 import {
   ALLOWED_NEXT,

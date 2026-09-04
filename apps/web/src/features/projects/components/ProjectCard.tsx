@@ -49,6 +49,14 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
               Team Builder →
             </Link>
           </PermissionGate>
+          <PermissionGate permission='feedback.view_shared'>
+            <Link
+              to={`/projects/${project.id}/feedback`}
+              className='text-xs font-medium text-fg-muted hover:text-fg hover:underline'
+            >
+              Feedback
+            </Link>
+          </PermissionGate>
         </div>
       </div>
     </article>

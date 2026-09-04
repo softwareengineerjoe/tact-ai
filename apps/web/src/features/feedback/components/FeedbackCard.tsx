@@ -48,7 +48,8 @@ export function FeedbackCard({
 
       <div className='mt-3 flex flex-wrap items-center justify-between gap-2'>
         <p className='text-xs text-fg-muted'>
-          {FEEDBACK_STATUS_LABELS[feedback.status]} · {formatDate(feedback.created_at)}
+          {FEEDBACK_STATUS_LABELS[feedback.status]} ·{' '}
+          {formatDate(feedback.created_at)}
         </p>
         {canAcknowledge ? (
           <PermissionGate permission='feedback.acknowledge'>

@@ -80,7 +80,10 @@ export function TicketsContainer() {
   }
   if (tickets.isError) {
     return (
-      <ErrorState error={tickets.error} onRetry={() => void tickets.refetch()} />
+      <ErrorState
+        error={tickets.error}
+        onRetry={() => void tickets.refetch()}
+      />
     );
   }
 
@@ -88,8 +91,8 @@ export function TicketsContainer() {
     <div className='space-y-4'>
       <div className='flex items-center justify-between gap-2'>
         <p className='text-sm text-fg-muted'>
-          {tickets.data.total} ticket{tickets.data.total === 1 ? '' : 's'} across
-          your projects
+          {tickets.data.total} ticket{tickets.data.total === 1 ? '' : 's'}{' '}
+          across your projects
         </p>
         <PermissionGate permission='tickets.create'>
           <button

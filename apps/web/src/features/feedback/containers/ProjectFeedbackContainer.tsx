@@ -59,7 +59,9 @@ export function ProjectFeedbackContainer({
   };
 
   if (feedback.isPending) {
-    return <LoadingState label='Loading feedback' variant='skeleton' rows={3} />;
+    return (
+      <LoadingState label='Loading feedback' variant='skeleton' rows={3} />
+    );
   }
   if (feedback.isError && feedback.error.status === 403) {
     return <ForbiddenState requiredPermissions={['feedback.view_shared']} />;

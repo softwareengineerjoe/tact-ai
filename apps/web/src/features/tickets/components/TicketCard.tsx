@@ -27,10 +27,7 @@ export function TicketCard({ ticket, onOpen }: TicketCardProps) {
           {TICKET_TYPE_LABELS[ticket.ticket_type]}
         </span>
         <span
-          className={cn(
-            'text-xs font-medium',
-            PRIORITY_TONE[ticket.priority],
-          )}
+          className={cn('text-xs font-medium', PRIORITY_TONE[ticket.priority])}
         >
           {TICKET_PRIORITY_LABELS[ticket.priority]}
         </span>

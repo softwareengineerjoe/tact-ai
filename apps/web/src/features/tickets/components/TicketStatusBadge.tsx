@@ -17,7 +17,10 @@ const STATUS_META: Record<TicketStatus, { label: string; tone: string }> = {
 };
 
 /** Ticket status pill — always pairs a dot + text, never color alone. */
-export function TicketStatusBadge({ status, className }: TicketStatusBadgeProps) {
+export function TicketStatusBadge({
+  status,
+  className,
+}: TicketStatusBadgeProps) {
   const meta = STATUS_META[status];
   return (
     <span

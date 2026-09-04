@@ -7,10 +7,7 @@ import type {
   FeedbackCategory,
   FeedbackVisibility,
 } from '@/features/feedback/types';
-import {
-  FEEDBACK_CATEGORY_LABELS,
-  FEEDBACK_VISIBILITY_LABELS,
-} from '../utils';
+import { FEEDBACK_CATEGORY_LABELS, FEEDBACK_VISIBILITY_LABELS } from '../utils';
 
 interface CreateFeedbackDialogProps {
   open: boolean;
