@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.repositories.assignment_repository import AssignmentRepository
+from app.repositories.audit_repository import AuditRepository
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.feedback_repository import FeedbackRepository
 from app.repositories.project_repository import ProjectRepository
@@ -102,10 +103,18 @@ def get_assignment_service(
 def get_ticket_service(
     session: AsyncSession = Depends(get_session),
 ) -> TicketService:
-    return TicketService(TicketRepository(session), ProjectRepository(session))
+    return TicketService(
+        TicketRepository(session),
+        ProjectRepository(session),
+        AuditRepository(session),
+    )
 
 
 def get_feedback_service(
     session: AsyncSession = Depends(get_session),
 ) -> FeedbackService:
-    return FeedbackService(FeedbackRepository(session), ProjectRepository(session))
+    return FeedbackService(
+        FeedbackRepository(session),
+        ProjectRepository(session),
+        AuditRepository(session),
+    )

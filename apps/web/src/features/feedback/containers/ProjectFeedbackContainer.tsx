@@ -12,11 +12,17 @@ import { usePeople } from '@/features/people';
 import { useTickets } from '@/features/tickets';
 import { useProjectFeedback } from '@/features/feedback/api/useProjectFeedback';
 import { useCreateFeedback } from '@/features/feedback/api/useCreateFeedback';
+import { useUpdateFeedback } from '@/features/feedback/api/useUpdateFeedback';
 import { useAcknowledgeFeedback } from '@/features/feedback/api/useAcknowledgeFeedback';
 import { ContributionSummary } from '@/features/feedback/components/ContributionSummary';
 import { CreateFeedbackDialog } from '@/features/feedback/components/CreateFeedbackDialog';
+import { EditFeedbackDialog } from '@/features/feedback/components/EditFeedbackDialog';
 import { FeedbackList } from '@/features/feedback/components/FeedbackList';
-import type { CreateFeedbackInput, Feedback } from '@/features/feedback/types';
+import type {
+  CreateFeedbackInput,
+  Feedback,
+  UpdateFeedbackInput,
+} from '@/features/feedback/types';
 
 interface ProjectFeedbackContainerProps {
   projectId: string;
@@ -31,9 +37,11 @@ export function ProjectFeedbackContainer({
   const tickets = useTickets({ pageSize: 100 });
 
   const [isCreating, setIsCreating] = useState(false);
+  const [editing, setEditing] = useState<Feedback | null>(null);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const create = useCreateFeedback();
+  const update = useUpdateFeedback();
   const acknowledge = useAcknowledgeFeedback();
 
   const handleCreate = (input: CreateFeedbackInput) => {
@@ -41,6 +49,16 @@ export function ProjectFeedbackContainer({
       onSuccess: () => {
         toast.success('Feedback added');
         setIsCreating(false);
+      },
+      onError: (error) => toast.error(error.message),
+    });
+  };
+
+  const handleUpdate = (input: UpdateFeedbackInput) => {
+    update.mutate(input, {
+      onSuccess: () => {
+        toast.success('Feedback updated');
+        setEditing(null);
       },
       onError: (error) => toast.error(error.message),
     });
@@ -112,6 +130,7 @@ export function ProjectFeedbackContainer({
             items={feedback.data}
             acknowledgingId={acknowledgingId}
             onAcknowledge={handleAcknowledge}
+            onEdit={setEditing}
           />
         )}
       </div>
@@ -123,6 +142,13 @@ export function ProjectFeedbackContainer({
         isPending={create.isPending}
         onSubmit={handleCreate}
         onClose={() => setIsCreating(false)}
+      />
+
+      <EditFeedbackDialog
+        feedback={editing}
+        isPending={update.isPending}
+        onSubmit={handleUpdate}
+        onClose={() => setEditing(null)}
       />
     </div>
   );

@@ -7,6 +7,7 @@ interface FeedbackCardProps {
   feedback: Feedback;
   isAcknowledging: boolean;
   onAcknowledge: (feedback: Feedback) => void;
+  onEdit: (feedback: Feedback) => void;
 }
 
 function formatDate(iso: string): string {
@@ -22,6 +23,7 @@ export function FeedbackCard({
   feedback,
   isAcknowledging,
   onAcknowledge,
+  onEdit,
 }: FeedbackCardProps) {
   const canAcknowledge =
     feedback.visibility !== 'manager_only' &&
@@ -51,18 +53,29 @@ export function FeedbackCard({
           {FEEDBACK_STATUS_LABELS[feedback.status]} ·{' '}
           {formatDate(feedback.created_at)}
         </p>
-        {canAcknowledge ? (
-          <PermissionGate permission='feedback.acknowledge'>
+        <div className='flex items-center gap-2'>
+          <PermissionGate permission='feedback.edit'>
             <button
               type='button'
-              onClick={() => onAcknowledge(feedback)}
-              disabled={isAcknowledging}
-              className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-fg-body transition-colors hover:bg-surface-muted disabled:opacity-50'
+              onClick={() => onEdit(feedback)}
+              className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-fg-body transition-colors hover:bg-surface-muted'
             >
-              Acknowledge
+              Edit
             </button>
           </PermissionGate>
-        ) : null}
+          {canAcknowledge ? (
+            <PermissionGate permission='feedback.acknowledge'>
+              <button
+                type='button'
+                onClick={() => onAcknowledge(feedback)}
+                disabled={isAcknowledging}
+                className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-fg-body transition-colors hover:bg-surface-muted disabled:opacity-50'
+              >
+                Acknowledge
+              </button>
+            </PermissionGate>
+          ) : null}
+        </div>
       </div>
     </article>
   );

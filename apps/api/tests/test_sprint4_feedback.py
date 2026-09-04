@@ -89,6 +89,14 @@ class StubFeedbackRepo:
         self.access_logs.append(log)
 
 
+class StubAuditRepo:
+    def __init__(self) -> None:
+        self.entries: list = []
+
+    async def record(self, **kwargs):  # type: ignore[no-untyped-def]
+        self.entries.append(kwargs)
+
+
 def _project() -> Project:
     project = Project(organization_id=ORG, name="Atlas", status="active")
     project.id = uuid.uuid4()
@@ -118,7 +126,11 @@ def _feedback(
 
 
 def _service(project: Project, feedback_repo: StubFeedbackRepo) -> FeedbackService:
-    return FeedbackService(feedback_repo, StubProjectRepo(project))  # type: ignore[arg-type]
+    return FeedbackService(
+        feedback_repo,  # type: ignore[arg-type]
+        StubProjectRepo(project),  # type: ignore[arg-type]
+        StubAuditRepo(),  # type: ignore[arg-type]
+    )
 
 
 @pytest.mark.asyncio
@@ -242,3 +254,18 @@ async def test_acknowledge_private_feedback_denied() -> None:
     principal = _principal(Permission.FEEDBACK_ACKNOWLEDGE)
     with pytest.raises(PermissionDenied):
         await service.acknowledge(principal, private.id)
+
+
+@pytest.mark.asyncio
+async def test_create_is_audited() -> None:
+    project = _project()
+    repo = StubFeedbackRepo()
+    audit = StubAuditRepo()
+    service = FeedbackService(repo, StubProjectRepo(project), audit)  # type: ignore[arg-type]
+    principal = _principal(Permission.FEEDBACK_CREATE)
+    await service.create(
+        principal,
+        project.id,
+        FeedbackCreate(employee_id=uuid.uuid4(), body="Nice job"),
+    )
+    assert any(e["action"] == "feedback.create" for e in audit.entries)

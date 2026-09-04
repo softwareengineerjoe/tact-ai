@@ -16,6 +16,7 @@ from app.models.feedback import (
     FeedbackAcknowledgement,
     FeedbackRevision,
 )
+from app.repositories.audit_repository import AuditRepository
 from app.repositories.feedback_repository import FeedbackRepository
 from app.repositories.project_repository import ProjectRepository
 from app.schemas.feedback import FeedbackCreate, FeedbackUpdate
@@ -32,9 +33,11 @@ class FeedbackService:
         self,
         feedback_repository: FeedbackRepository,
         project_repository: ProjectRepository,
+        audit_repository: AuditRepository,
     ) -> None:
         self._feedback = feedback_repository
         self._projects = project_repository
+        self._audit = audit_repository
 
     async def list_for_project(self, principal: Principal, project_id: uuid.UUID) -> list[Feedback]:
         principal.require(Permission.FEEDBACK_VIEW_SHARED)
@@ -85,6 +88,13 @@ class FeedbackService:
                 body=data.body,
             )
         )
+        await self._audit.record(
+            organization_id=principal.organization_id,
+            actor_id=principal.user_id,
+            action="feedback.create",
+            resource_type="feedback",
+            resource_id=created.id,
+        )
         return created
 
     async def update(
@@ -112,6 +122,13 @@ class FeedbackService:
         if data.status is not None:
             feedback.status = data.status
         feedback.version += 1
+        await self._audit.record(
+            organization_id=principal.organization_id,
+            actor_id=principal.user_id,
+            action="feedback.update",
+            resource_type="feedback",
+            resource_id=feedback.id,
+        )
         return feedback
 
     async def acknowledge(self, principal: Principal, feedback_id: uuid.UUID) -> Feedback:
@@ -129,6 +146,13 @@ class FeedbackService:
         )
         feedback.status = FeedbackStatus.ACKNOWLEDGED
         feedback.version += 1
+        await self._audit.record(
+            organization_id=principal.organization_id,
+            actor_id=principal.user_id,
+            action="feedback.acknowledge",
+            resource_type="feedback",
+            resource_id=feedback.id,
+        )
         return feedback
 
     async def _require_project(self, principal: Principal, project_id: uuid.UUID) -> None:

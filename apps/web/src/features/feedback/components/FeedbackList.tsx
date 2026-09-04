@@ -5,6 +5,7 @@ interface FeedbackListProps {
   items: readonly Feedback[];
   acknowledgingId: string | null;
   onAcknowledge: (feedback: Feedback) => void;
+  onEdit: (feedback: Feedback) => void;
 }
 
 /** Renders the project's feedback entries, newest first. */
@@ -12,6 +13,7 @@ export function FeedbackList({
   items,
   acknowledgingId,
   onAcknowledge,
+  onEdit,
 }: FeedbackListProps) {
   return (
     <ul className='space-y-3'>
@@ -21,6 +23,7 @@ export function FeedbackList({
             feedback={feedback}
             isAcknowledging={acknowledgingId === feedback.id}
             onAcknowledge={onAcknowledge}
+            onEdit={onEdit}
           />
         </li>
       ))}

@@ -6,6 +6,7 @@ import {
 import type {
   AcknowledgeFeedbackInput,
   CreateFeedbackInput,
+  UpdateFeedbackInput,
 } from '@/features/feedback/types';
 
 export const feedbackService = {
@@ -21,6 +22,17 @@ export const feedbackService = {
         category: input.category,
         visibility: input.visibility,
         body: input.body,
+      }),
+    }),
+
+  update: (input: UpdateFeedbackInput) =>
+    request(`/feedback/${input.feedbackId}`, FeedbackSchema, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        category: input.category,
+        visibility: input.visibility,
+        body: input.body,
+        version: input.version,
       }),
     }),
 

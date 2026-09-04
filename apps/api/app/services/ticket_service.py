@@ -10,6 +10,7 @@ import uuid
 from app.core.enums import TicketStatus
 from app.core.exceptions import ConflictError, NotFound, ValidationError
 from app.models.ticket import Ticket, TicketActivity, TicketComment
+from app.repositories.audit_repository import AuditRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.ticket_repository import TicketRepository
 from app.schemas.common import PageParams
@@ -46,9 +47,11 @@ class TicketService:
         self,
         ticket_repository: TicketRepository,
         project_repository: ProjectRepository,
+        audit_repository: AuditRepository,
     ) -> None:
         self._tickets = ticket_repository
         self._projects = project_repository
+        self._audit = audit_repository
 
     async def list_for_project(self, principal: Principal, project_id: uuid.UUID) -> list[Ticket]:
         principal.require(Permission.TICKETS_VIEW)
@@ -188,6 +191,14 @@ class TicketService:
                 action=action,
                 detail=detail,
             )
+        )
+        await self._audit.record(
+            organization_id=principal.organization_id,
+            actor_id=principal.user_id,
+            action=f"ticket.{action}",
+            resource_type="ticket",
+            resource_id=ticket.id,
+            detail=detail,
         )
 
     async def _require_project(self, principal: Principal, project_id: uuid.UUID) -> None:

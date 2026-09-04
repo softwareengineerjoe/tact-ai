@@ -4,6 +4,7 @@ Import model modules here so their tables register on ``Base.metadata`` for
 Alembic autogeneration and metadata create.
 """
 
+from app.models.audit import AuditLog
 from app.models.base import Base
 from app.models.employee import (
     Employee,
@@ -44,4 +45,5 @@ __all__ = [
     "FeedbackRevision",
     "FeedbackAcknowledgement",
     "FeedbackAccessLog",
+    "AuditLog",
 ]

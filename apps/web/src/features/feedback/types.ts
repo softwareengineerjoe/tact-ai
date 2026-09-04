@@ -24,3 +24,12 @@ export interface AcknowledgeFeedbackInput {
   feedbackId: string;
   projectId: string;
 }
+
+export interface UpdateFeedbackInput {
+  feedbackId: string;
+  projectId: string;
+  category: FeedbackCategory;
+  visibility: FeedbackVisibility;
+  body: string;
+  version: number;
+}

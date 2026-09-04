@@ -84,6 +84,14 @@ class StubTicketRepo:
         ticket.deleted_at = object()
 
 
+class StubAuditRepo:
+    def __init__(self) -> None:
+        self.entries: list = []
+
+    async def record(self, **kwargs):  # type: ignore[no-untyped-def]
+        self.entries.append(kwargs)
+
+
 def _project() -> Project:
     return Project(id=uuid.uuid4(), organization_id=ORG, name="Atlas")
 
@@ -103,7 +111,11 @@ def _ticket(project: Project, *, status: TicketStatus = TicketStatus.BACKLOG) ->
 
 
 def _service(project: Project, tickets: list[Ticket] | None = None) -> TicketService:
-    return TicketService(StubTicketRepo(tickets), StubProjectRepo(project))  # type: ignore[arg-type]
+    return TicketService(
+        StubTicketRepo(tickets),  # type: ignore[arg-type]
+        StubProjectRepo(project),  # type: ignore[arg-type]
+        StubAuditRepo(),  # type: ignore[arg-type]
+    )
 
 
 # --- Creation & permissions ----------------------------------------------
@@ -230,7 +242,8 @@ async def test_add_comment_records_activity() -> None:
     project = _project()
     ticket = _ticket(project)
     repo = StubTicketRepo([ticket])
-    service = TicketService(repo, StubProjectRepo(project))  # type: ignore[arg-type]
+    audit = StubAuditRepo()
+    service = TicketService(repo, StubProjectRepo(project), audit)  # type: ignore[arg-type]
     await service.add_comment(
         _principal(Permission.TICKETS_VIEW),
         ticket.id,
@@ -238,3 +251,4 @@ async def test_add_comment_records_activity() -> None:
     )
     assert len(repo.comments) == 1
     assert any(a.action == "commented" for a in repo.activity)
+    assert any(e["action"] == "ticket.commented" for e in audit.entries)
