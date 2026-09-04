@@ -28,29 +28,27 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
           {project.description}
         </p>
       ) : null}
-      <div className='mt-3 flex items-center justify-between'>
-        <p className='text-xs uppercase tracking-wide text-fg-muted'>
-          Priority: {project.priority}
-        </p>
+      <p className='mt-3 text-xs uppercase tracking-wide text-fg-muted'>
+        Priority: {project.priority}
+      </p>
+      <div className='mt-4 flex items-center justify-end gap-2 border-t border-border pt-3'>
+        <PermissionGate permission='projects.edit'>
+          <Link
+            to={`/projects/${project.id}/setup`}
+            className='h-8 rounded-md border border-border px-3 text-xs font-medium leading-8 text-fg-body hover:bg-surface-muted'
+          >
+            Edit
+          </Link>
+        </PermissionGate>
         <PermissionGate permission='team.recommend'>
           <Link
             to={`/projects/${project.id}/team-builder`}
-            className='text-xs font-medium text-primary hover:underline'
+            className='h-8 rounded-md bg-primary px-3 text-xs font-medium leading-8 text-primary-fg hover:bg-primary-hover'
           >
-            Team Builder →
+            Team Builder
           </Link>
         </PermissionGate>
       </div>
-      <PermissionGate permission='projects.edit'>
-        <div className='mt-2 flex justify-end'>
-          <Link
-            to={`/projects/${project.id}/setup`}
-            className='text-xs font-medium text-fg-muted hover:text-fg hover:underline'
-          >
-            Set up roles &amp; dates
-          </Link>
-        </div>
-      </PermissionGate>
     </article>
   );
 }

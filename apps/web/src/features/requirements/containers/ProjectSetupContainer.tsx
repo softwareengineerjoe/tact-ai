@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 import {
   ConfirmDialog,
@@ -38,6 +39,7 @@ function toFormValues(requirement: RoleRequirement): RequirementFormValues {
 export function ProjectSetupContainer({
   projectId,
 }: ProjectSetupContainerProps) {
+  const navigate = useNavigate();
   const projectQuery = useProject(projectId);
   const requirementsQuery = useProjectRequirements(projectId);
 
@@ -221,6 +223,24 @@ export function ProjectSetupContainer({
           </ul>
         )}
       </section>
+
+      <div className='flex items-center justify-between gap-2 border-t border-border pt-4'>
+        <button
+          type='button'
+          onClick={() => void navigate('/projects')}
+          className='h-10 rounded-md border border-border px-4 text-sm font-medium text-fg hover:bg-surface-muted'
+        >
+          Back to projects
+        </button>
+        <PermissionGate permission='team.recommend'>
+          <Link
+            to={`/projects/${projectId}/team-builder`}
+            className='h-10 rounded-md bg-primary px-4 text-sm font-medium leading-10 text-primary-fg hover:bg-primary-hover'
+          >
+            Go to Team Builder
+          </Link>
+        </PermissionGate>
+      </div>
 
       <ConfirmDialog
         open={pendingDelete !== null}

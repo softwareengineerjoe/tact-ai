@@ -34,6 +34,21 @@ export function ProjectScheduleForm({
   );
   const [error, setError] = useState<string | null>(null);
 
+  const initialStart = toDateInput(project.start_date);
+  const initialEnd = toDateInput(project.target_end_date);
+  const initialTeamSize = project.expected_team_size?.toString() ?? '';
+  const isDirty =
+    startDate !== initialStart ||
+    targetEndDate !== initialEnd ||
+    expectedTeamSize !== initialTeamSize;
+
+  const handleReset = () => {
+    setStartDate(initialStart);
+    setTargetEndDate(initialEnd);
+    setExpectedTeamSize(initialTeamSize);
+    setError(null);
+  };
+
   const inputClass = cn(
     'h-10 w-full rounded-md border border-border bg-surface px-3 text-sm',
     'focus:outline-none focus:ring-2 focus:ring-primary-hover focus:ring-offset-1',
@@ -113,13 +128,23 @@ export function ProjectScheduleForm({
         </p>
       ) : null}
 
-      <button
-        type='submit'
-        disabled={isPending}
-        className='h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg hover:bg-primary-hover disabled:opacity-60'
-      >
-        {isPending ? 'Saving…' : 'Save schedule'}
-      </button>
+      <div className='flex items-center justify-end gap-2 border-t border-border pt-4'>
+        <button
+          type='button'
+          onClick={handleReset}
+          disabled={isPending || !isDirty}
+          className='h-10 rounded-md border border-border px-4 text-sm font-medium text-fg hover:bg-surface-muted disabled:opacity-50'
+        >
+          Reset
+        </button>
+        <button
+          type='submit'
+          disabled={isPending || !isDirty}
+          className='h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg hover:bg-primary-hover disabled:opacity-60'
+        >
+          {isPending ? 'Saving…' : 'Save schedule'}
+        </button>
+      </div>
     </form>
   );
 }
