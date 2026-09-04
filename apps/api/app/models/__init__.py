@@ -11,6 +11,12 @@ from app.models.employee import (
     EmployeeSkill,
     Skill,
 )
+from app.models.feedback import (
+    Feedback,
+    FeedbackAccessLog,
+    FeedbackAcknowledgement,
+    FeedbackRevision,
+)
 from app.models.organization import Organization
 from app.models.project import (
     Project,
@@ -34,4 +40,8 @@ __all__ = [
     "Ticket",
     "TicketComment",
     "TicketActivity",
+    "Feedback",
+    "FeedbackRevision",
+    "FeedbackAcknowledgement",
+    "FeedbackAccessLog",
 ]

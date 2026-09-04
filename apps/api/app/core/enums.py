@@ -88,3 +88,27 @@ class TicketPriority(StrEnum):
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
+
+class FeedbackCategory(StrEnum):
+    RECOGNITION = "recognition"
+    STRENGTH = "strength"
+    IMPROVEMENT_AREA = "improvement_area"
+    COACHING = "coaching"
+    PROJECT_CONTRIBUTION = "project_contribution"
+    FOLLOW_UP = "follow_up"
+
+
+class FeedbackVisibility(StrEnum):
+    MANAGER_ONLY = "manager_only"
+    MANAGER_AND_EMPLOYEE = "manager_and_employee"
+    PROJECT_LEADERSHIP = "project_leadership"
+    HR_PARTNER = "hr_partner"
+
+
+class FeedbackStatus(StrEnum):
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
+    SHARED = "shared"
+    ACKNOWLEDGED = "acknowledged"
+    CLOSED = "closed"
