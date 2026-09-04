@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_feedback_service, get_principal, require_permission
 from app.core.enums import FeedbackVisibility
@@ -78,3 +78,13 @@ async def acknowledge_feedback(
 ) -> FeedbackRead:
     feedback = await service.acknowledge(principal, feedback_id)
     return _to_read(feedback)
+
+
+@router.delete("/feedback/{feedback_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_feedback(
+    feedback_id: uuid.UUID,
+    version: int = Query(..., ge=0),
+    principal: Principal = Depends(require_permission(Permission.FEEDBACK_EDIT)),
+    service: FeedbackService = Depends(get_feedback_service),
+) -> None:
+    await service.delete(principal, feedback_id, version=version)

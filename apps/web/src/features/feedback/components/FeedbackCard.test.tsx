@@ -39,6 +39,7 @@ function renderCard(feedback: Feedback, permissions: string[]) {
         isAcknowledging={false}
         onAcknowledge={() => {}}
         onEdit={() => {}}
+        onDelete={() => {}}
       />
     </SessionContext.Provider>,
   );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import {
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   ForbiddenState,
@@ -8,21 +9,18 @@ import {
   PermissionGate,
   toast,
 } from '@/components/shared';
-import { usePeople } from '@/features/people';
+import { useProjectTeam } from '@/features/team-builder';
 import { useTickets } from '@/features/tickets';
 import { useProjectFeedback } from '@/features/feedback/api/useProjectFeedback';
 import { useCreateFeedback } from '@/features/feedback/api/useCreateFeedback';
 import { useUpdateFeedback } from '@/features/feedback/api/useUpdateFeedback';
+import { useDeleteFeedback } from '@/features/feedback/api/useDeleteFeedback';
 import { useAcknowledgeFeedback } from '@/features/feedback/api/useAcknowledgeFeedback';
 import { ContributionSummary } from '@/features/feedback/components/ContributionSummary';
-import { CreateFeedbackDialog } from '@/features/feedback/components/CreateFeedbackDialog';
-import { EditFeedbackDialog } from '@/features/feedback/components/EditFeedbackDialog';
+import { FeedbackForm } from '@/features/feedback/components/FeedbackForm';
+import type { FeedbackFormValues } from '@/features/feedback/components/FeedbackForm';
 import { FeedbackList } from '@/features/feedback/components/FeedbackList';
-import type {
-  CreateFeedbackInput,
-  Feedback,
-  UpdateFeedbackInput,
-} from '@/features/feedback/types';
+import type { Feedback } from '@/features/feedback/types';
 
 interface ProjectFeedbackContainerProps {
   projectId: string;
@@ -33,35 +31,72 @@ export function ProjectFeedbackContainer({
   projectId,
 }: ProjectFeedbackContainerProps) {
   const feedback = useProjectFeedback(projectId);
-  const people = usePeople({ pageSize: 100 });
+  const team = useProjectTeam(projectId);
   const tickets = useTickets({ pageSize: 100 });
 
   const [isCreating, setIsCreating] = useState(false);
   const [editing, setEditing] = useState<Feedback | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Feedback | null>(null);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const create = useCreateFeedback();
   const update = useUpdateFeedback();
+  const remove = useDeleteFeedback();
   const acknowledge = useAcknowledgeFeedback();
 
-  const handleCreate = (input: CreateFeedbackInput) => {
-    create.mutate(input, {
-      onSuccess: () => {
-        toast.success('Feedback added');
-        setIsCreating(false);
+  const handleCreate = (values: FeedbackFormValues) => {
+    create.mutate(
+      { ...values, projectId },
+      {
+        onSuccess: () => {
+          toast.success('Feedback added');
+          setIsCreating(false);
+        },
+        onError: (error) => toast.error(error.message),
       },
-      onError: (error) => toast.error(error.message),
-    });
+    );
   };
 
-  const handleUpdate = (input: UpdateFeedbackInput) => {
-    update.mutate(input, {
-      onSuccess: () => {
-        toast.success('Feedback updated');
-        setEditing(null);
+  const handleUpdate = (values: FeedbackFormValues) => {
+    if (!editing) return;
+    update.mutate(
+      {
+        feedbackId: editing.id,
+        projectId: editing.project_id,
+        category: values.category,
+        visibility: values.visibility,
+        body: values.body,
+        version: editing.version,
       },
-      onError: (error) => toast.error(error.message),
-    });
+      {
+        onSuccess: () => {
+          toast.success('Feedback updated');
+          setEditing(null);
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    remove.mutate(
+      {
+        feedbackId: pendingDelete.id,
+        projectId,
+        version: pendingDelete.version,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Feedback deleted');
+          setPendingDelete(null);
+        },
+        onError: (error) => {
+          toast.error(error.message);
+          setPendingDelete(null);
+        },
+      },
+    );
   };
 
   const handleAcknowledge = (item: Feedback) => {
@@ -97,6 +132,24 @@ export function ProjectFeedbackContainer({
     (ticket) => ticket.project_id === projectId,
   );
 
+  // Feedback correlates to project participation: only employees who worked or
+  // are working on this project (confirmed/active/ended assignments) (FR-011).
+  const QUALIFYING_STATUSES = new Set(['confirmed', 'active', 'ended']);
+  const teamEmployees = Array.from(
+    new Map(
+      (team.data ?? [])
+        .filter((a) => QUALIFYING_STATUSES.has(a.status))
+        .map((a) => [
+          a.employee_id,
+          {
+            id: a.employee_id,
+            display_name: a.employee_display_name ?? 'Employee',
+          },
+        ]),
+    ).values(),
+  );
+  const hasTeam = teamEmployees.length > 0;
+
   return (
     <div className='space-y-6'>
       <ContributionSummary tickets={projectTickets} />
@@ -105,50 +158,88 @@ export function ProjectFeedbackContainer({
         <div className='flex items-center justify-between gap-2'>
           <h2 className='text-sm font-semibold text-fg'>Feedback</h2>
           <PermissionGate permission='feedback.create'>
-            <button
-              type='button'
-              onClick={() => setIsCreating(true)}
-              className='h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg transition-colors hover:bg-primary-hover'
-            >
-              New feedback
-            </button>
+            {!isCreating && !editing && hasTeam ? (
+              <button
+                type='button'
+                onClick={() => setIsCreating(true)}
+                className='h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg transition-colors hover:bg-primary-hover'
+              >
+                New feedback
+              </button>
+            ) : null}
           </PermissionGate>
         </div>
 
-        {feedback.data.length === 0 ? (
-          <EmptyState
-            title='No feedback yet'
-            description='Record project-related feedback for a team member.'
-            action={{
-              label: 'New feedback',
-              onClick: () => setIsCreating(true),
-              permission: 'feedback.create',
-            }}
-          />
-        ) : (
+        {isCreating ? (
+          <div className='rounded-lg border border-border bg-surface p-4 shadow-xs'>
+            <h3 className='mb-3 font-medium text-fg'>New feedback</h3>
+            <FeedbackForm
+              employees={teamEmployees}
+              submitLabel='Add feedback'
+              isPending={create.isPending}
+              onSubmit={handleCreate}
+              onCancel={() => setIsCreating(false)}
+            />
+          </div>
+        ) : null}
+
+        {editing ? (
+          <div className='rounded-lg border border-border bg-surface p-4 shadow-xs'>
+            <h3 className='mb-3 font-medium text-fg'>Edit feedback</h3>
+            <FeedbackForm
+              initialValues={{
+                employeeId: editing.employee_id,
+                category: editing.category,
+                visibility: editing.visibility,
+                body: editing.body,
+              }}
+              submitLabel='Save changes'
+              isPending={update.isPending}
+              onSubmit={handleUpdate}
+              onCancel={() => setEditing(null)}
+            />
+          </div>
+        ) : null}
+
+        {feedback.data.length === 0 && !isCreating ? (
+          hasTeam ? (
+            <EmptyState
+              title='No feedback yet'
+              description='Record project-related feedback for a team member.'
+              action={{
+                label: 'New feedback',
+                onClick: () => setIsCreating(true),
+                permission: 'feedback.create',
+              }}
+            />
+          ) : (
+            <EmptyState
+              title='No team members yet'
+              description='Feedback can only be recorded for employees assigned to this project. Confirm a team member in the Team Builder first.'
+            />
+          )
+        ) : null}
+
+        {feedback.data.length > 0 ? (
           <FeedbackList
             items={feedback.data}
             acknowledgingId={acknowledgingId}
             onAcknowledge={handleAcknowledge}
             onEdit={setEditing}
+            onDelete={setPendingDelete}
           />
-        )}
+        ) : null}
       </div>
 
-      <CreateFeedbackDialog
-        open={isCreating}
-        projectId={projectId}
-        employees={people.data?.items ?? []}
-        isPending={create.isPending}
-        onSubmit={handleCreate}
-        onClose={() => setIsCreating(false)}
-      />
-
-      <EditFeedbackDialog
-        feedback={editing}
-        isPending={update.isPending}
-        onSubmit={handleUpdate}
-        onClose={() => setEditing(null)}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title='Delete this feedback?'
+        description='The feedback will be removed from the project. Its revision history is preserved.'
+        confirmLabel='Delete'
+        tone='danger'
+        isPending={remove.isPending}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   );

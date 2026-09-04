@@ -1,4 +1,4 @@
-import { request } from '@/services/httpClient';
+import { request, requestVoid } from '@/services/httpClient';
 import {
   FeedbackListSchema,
   FeedbackSchema,
@@ -39,5 +39,10 @@ export const feedbackService = {
   acknowledge: (input: AcknowledgeFeedbackInput) =>
     request(`/feedback/${input.feedbackId}/acknowledge`, FeedbackSchema, {
       method: 'POST',
+    }),
+
+  remove: (feedbackId: string, version: number) =>
+    requestVoid(`/feedback/${feedbackId}?version=${version}`, {
+      method: 'DELETE',
     }),
 };

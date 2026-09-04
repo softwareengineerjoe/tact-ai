@@ -6,10 +6,11 @@ org isolation, optimistic concurrency, and the acknowledge flow.
 """
 
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from app.core.enums import FeedbackStatus, FeedbackVisibility
-from app.core.exceptions import ConflictError, NotFound, PermissionDenied
+from app.core.exceptions import ConflictError, NotFound, PermissionDenied, ValidationError
 from app.models.feedback import Feedback
 from app.models.project import Project
 from app.schemas.feedback import FeedbackCreate, FeedbackUpdate
@@ -88,6 +89,10 @@ class StubFeedbackRepo:
     async def record_access(self, log):  # type: ignore[no-untyped-def]
         self.access_logs.append(log)
 
+    async def soft_delete(self, feedback):  # type: ignore[no-untyped-def]
+        feedback.deleted_at = datetime.now(UTC)
+        feedback.version += 1
+
 
 class StubAuditRepo:
     def __init__(self) -> None:
@@ -95,6 +100,14 @@ class StubAuditRepo:
 
     async def record(self, **kwargs):  # type: ignore[no-untyped-def]
         self.entries.append(kwargs)
+
+
+class StubAssignmentRepo:
+    def __init__(self, *, assigned: bool = True) -> None:
+        self._assigned = assigned
+
+    async def has_project_assignment(self, organization_id, project_id, employee_id):  # type: ignore[no-untyped-def]
+        return self._assigned
 
 
 def _project() -> Project:
@@ -125,10 +138,16 @@ def _feedback(
     return feedback
 
 
-def _service(project: Project, feedback_repo: StubFeedbackRepo) -> FeedbackService:
+def _service(
+    project: Project,
+    feedback_repo: StubFeedbackRepo,
+    *,
+    assigned: bool = True,
+) -> FeedbackService:
     return FeedbackService(
         feedback_repo,  # type: ignore[arg-type]
         StubProjectRepo(project),  # type: ignore[arg-type]
+        StubAssignmentRepo(assigned=assigned),  # type: ignore[arg-type]
         StubAuditRepo(),  # type: ignore[arg-type]
     )
 
@@ -159,6 +178,19 @@ async def test_create_records_initial_revision() -> None:
     )
     assert created.status == FeedbackStatus.SUBMITTED
     assert len(repo.revisions) == 1
+
+
+@pytest.mark.asyncio
+async def test_create_requires_project_assignment() -> None:
+    project = _project()
+    service = _service(project, StubFeedbackRepo(), assigned=False)
+    principal = _principal(Permission.FEEDBACK_CREATE)
+    with pytest.raises(ValidationError):
+        await service.create(
+            principal,
+            project.id,
+            FeedbackCreate(employee_id=uuid.uuid4(), body="Nice job"),
+        )
 
 
 @pytest.mark.asyncio
@@ -261,7 +293,12 @@ async def test_create_is_audited() -> None:
     project = _project()
     repo = StubFeedbackRepo()
     audit = StubAuditRepo()
-    service = FeedbackService(repo, StubProjectRepo(project), audit)  # type: ignore[arg-type]
+    service = FeedbackService(
+        repo,
+        StubProjectRepo(project),
+        StubAssignmentRepo(),
+        audit,
+    )  # type: ignore[arg-type]
     principal = _principal(Permission.FEEDBACK_CREATE)
     await service.create(
         principal,
@@ -269,3 +306,42 @@ async def test_create_is_audited() -> None:
         FeedbackCreate(employee_id=uuid.uuid4(), body="Nice job"),
     )
     assert any(e["action"] == "feedback.create" for e in audit.entries)
+
+
+@pytest.mark.asyncio
+async def test_delete_requires_permission() -> None:
+    project = _project()
+    item = _feedback(project.id, visibility=FeedbackVisibility.MANAGER_AND_EMPLOYEE)
+    service = _service(project, StubFeedbackRepo([item]))
+    principal = _principal(Permission.FEEDBACK_VIEW_SHARED)
+    with pytest.raises(PermissionDenied):
+        await service.delete(principal, item.id, version=item.version)
+
+
+@pytest.mark.asyncio
+async def test_delete_soft_deletes_and_audits() -> None:
+    project = _project()
+    item = _feedback(project.id, visibility=FeedbackVisibility.MANAGER_AND_EMPLOYEE)
+    repo = StubFeedbackRepo([item])
+    audit = StubAuditRepo()
+    service = FeedbackService(
+        repo,
+        StubProjectRepo(project),
+        StubAssignmentRepo(),
+        audit,
+    )  # type: ignore[arg-type]
+    principal = _principal(Permission.FEEDBACK_EDIT)
+    await service.delete(principal, item.id, version=item.version)
+    assert item.deleted_at is not None
+    assert any(e["action"] == "feedback.delete" for e in audit.entries)
+
+
+@pytest.mark.asyncio
+async def test_delete_version_conflict() -> None:
+    project = _project()
+    item = _feedback(project.id, visibility=FeedbackVisibility.MANAGER_AND_EMPLOYEE)
+    service = _service(project, StubFeedbackRepo([item]))
+    principal = _principal(Permission.FEEDBACK_EDIT)
+    with pytest.raises(ConflictError):
+        await service.delete(principal, item.id, version=item.version + 5)
+

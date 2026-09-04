@@ -84,6 +84,33 @@ class AssignmentRepository:
             stmt = stmt.where(ProjectAssignment.id != exclude_assignment_id)
         return list(await self._session.scalars(stmt))
 
+    async def has_project_assignment(
+        self,
+        organization_id: uuid.UUID,
+        project_id: uuid.UUID,
+        employee_id: uuid.UUID,
+    ) -> bool:
+        """Whether the employee worked or is working on the project.
+
+        "Worked or is working" means an assignment that reached at least
+        CONFIRMED (confirmed, active, or ended). Recommended/reserved/pending and
+        terminal-rejection statuses do not count. Used to constrain feedback to
+        real project participants (FR-011).
+        """
+        qualifying = (
+            AssignmentStatus.CONFIRMED,
+            AssignmentStatus.ACTIVE,
+            AssignmentStatus.ENDED,
+        )
+        stmt = select(ProjectAssignment.id).where(
+            ProjectAssignment.organization_id == organization_id,
+            ProjectAssignment.project_id == project_id,
+            ProjectAssignment.employee_id == employee_id,
+            ProjectAssignment.deleted_at.is_(None),
+            ProjectAssignment.status.in_([str(s) for s in qualifying]),
+        )
+        return (await self._session.scalar(stmt)) is not None
+
     async def find_active_for_employee_role(
         self,
         organization_id: uuid.UUID,

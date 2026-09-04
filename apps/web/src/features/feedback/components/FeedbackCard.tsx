@@ -8,6 +8,7 @@ interface FeedbackCardProps {
   isAcknowledging: boolean;
   onAcknowledge: (feedback: Feedback) => void;
   onEdit: (feedback: Feedback) => void;
+  onDelete: (feedback: Feedback) => void;
 }
 
 function formatDate(iso: string): string {
@@ -24,6 +25,7 @@ export function FeedbackCard({
   isAcknowledging,
   onAcknowledge,
   onEdit,
+  onDelete,
 }: FeedbackCardProps) {
   const canAcknowledge =
     feedback.visibility !== 'manager_only' &&
@@ -61,6 +63,15 @@ export function FeedbackCard({
               className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-fg-body transition-colors hover:bg-surface-muted'
             >
               Edit
+            </button>
+          </PermissionGate>
+          <PermissionGate permission='feedback.edit'>
+            <button
+              type='button'
+              onClick={() => onDelete(feedback)}
+              className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-danger transition-colors hover:bg-surface-muted'
+            >
+              Delete
             </button>
           </PermissionGate>
           {canAcknowledge ? (

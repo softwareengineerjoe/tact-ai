@@ -15,7 +15,7 @@ import { useCreateTicket } from '@/features/tickets/api/useCreateTicket';
 import { useTransitionTicket } from '@/features/tickets/api/useTransitionTicket';
 import { useCommentTicket } from '@/features/tickets/api/useCommentTicket';
 import { TicketBoard } from '@/features/tickets/components/TicketBoard';
-import { CreateTicketDialog } from '@/features/tickets/components/CreateTicketDialog';
+import { CreateTicketForm } from '@/features/tickets/components/CreateTicketForm';
 import { TicketDetailDialog } from '@/features/tickets/components/TicketDetailDialog';
 import type { CreateTicketInput, TicketStatus } from '@/features/tickets/types';
 
@@ -95,17 +95,31 @@ export function TicketsContainer() {
           across your projects
         </p>
         <PermissionGate permission='tickets.create'>
-          <button
-            type='button'
-            onClick={() => setIsCreating(true)}
-            className='h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg transition-colors hover:bg-primary-hover'
-          >
-            New ticket
-          </button>
+          {!isCreating ? (
+            <button
+              type='button'
+              onClick={() => setIsCreating(true)}
+              className='h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg transition-colors hover:bg-primary-hover'
+            >
+              New ticket
+            </button>
+          ) : null}
         </PermissionGate>
       </div>
 
-      {tickets.data.items.length === 0 ? (
+      {isCreating ? (
+        <div className='rounded-lg border border-border bg-surface p-4 shadow-xs'>
+          <h2 className='mb-3 font-medium text-fg'>New ticket</h2>
+          <CreateTicketForm
+            projects={projects.data?.items ?? []}
+            isPending={create.isPending}
+            onSubmit={handleCreate}
+            onCancel={() => setIsCreating(false)}
+          />
+        </div>
+      ) : null}
+
+      {tickets.data.items.length === 0 && !isCreating ? (
         <EmptyState
           title='No tickets yet'
           description='Create your first ticket to start tracking work.'
@@ -115,17 +129,11 @@ export function TicketsContainer() {
             permission: 'tickets.create',
           }}
         />
-      ) : (
-        <TicketBoard tickets={tickets.data.items} onOpen={setOpenTicketId} />
-      )}
+      ) : null}
 
-      <CreateTicketDialog
-        open={isCreating}
-        projects={projects.data?.items ?? []}
-        isPending={create.isPending}
-        onSubmit={handleCreate}
-        onClose={() => setIsCreating(false)}
-      />
+      {tickets.data.items.length > 0 ? (
+        <TicketBoard tickets={tickets.data.items} onOpen={setOpenTicketId} />
+      ) : null}
 
       {openTicketId !== null && detail.data ? (
         <TicketDetailDialog

@@ -88,7 +88,9 @@ export function ContributionSummary({ tickets }: ContributionSummaryProps) {
             <dd className='mt-1 text-lg font-semibold tabular-nums text-fg'>
               {metric.value}
             </dd>
-            <p className='mt-1 text-[11px] text-fg-muted'>Source: {metric.source}</p>
+            <p className='mt-1 text-[11px] text-fg-muted'>
+              Source: {metric.source}
+            </p>
           </div>
         ))}
       </dl>

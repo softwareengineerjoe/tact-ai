@@ -9,13 +9,14 @@ change. Feedback never affects the recommendation score.
 import uuid
 
 from app.core.enums import FeedbackStatus, FeedbackVisibility
-from app.core.exceptions import ConflictError, NotFound, PermissionDenied
+from app.core.exceptions import ConflictError, NotFound, PermissionDenied, ValidationError
 from app.models.feedback import (
     Feedback,
     FeedbackAccessLog,
     FeedbackAcknowledgement,
     FeedbackRevision,
 )
+from app.repositories.assignment_repository import AssignmentRepository
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.feedback_repository import FeedbackRepository
 from app.repositories.project_repository import ProjectRepository
@@ -33,10 +34,12 @@ class FeedbackService:
         self,
         feedback_repository: FeedbackRepository,
         project_repository: ProjectRepository,
+        assignment_repository: AssignmentRepository,
         audit_repository: AuditRepository,
     ) -> None:
         self._feedback = feedback_repository
         self._projects = project_repository
+        self._assignments = assignment_repository
         self._audit = audit_repository
 
     async def list_for_project(self, principal: Principal, project_id: uuid.UUID) -> list[Feedback]:
@@ -68,6 +71,15 @@ class FeedbackService:
     ) -> Feedback:
         principal.require(Permission.FEEDBACK_CREATE)
         await self._require_project(principal, project_id)
+        # Feedback is project-contribution based: the employee must have worked or
+        # be working on this project (a confirmed/active/ended assignment) (FR-011).
+        has_assignment = await self._assignments.has_project_assignment(
+            principal.organization_id, project_id, data.employee_id
+        )
+        if not has_assignment:
+            raise ValidationError(
+                "Feedback can only be recorded for an employee assigned to this project"
+            )
 
         feedback = Feedback(
             organization_id=principal.organization_id,
@@ -95,7 +107,8 @@ class FeedbackService:
             resource_type="feedback",
             resource_id=created.id,
         )
-        return created
+        # Reload with the employee relationship eager-loaded for serialization.
+        return await self._require_feedback(principal, created.id)
 
     async def update(
         self, principal: Principal, feedback_id: uuid.UUID, data: FeedbackUpdate
@@ -130,6 +143,20 @@ class FeedbackService:
             resource_id=feedback.id,
         )
         return feedback
+
+    async def delete(self, principal: Principal, feedback_id: uuid.UUID, *, version: int) -> None:
+        principal.require(Permission.FEEDBACK_EDIT)
+        feedback = await self._require_feedback(principal, feedback_id)
+        if feedback.version != version:
+            raise ConflictError("Feedback was modified by someone else")
+        await self._feedback.soft_delete(feedback)
+        await self._audit.record(
+            organization_id=principal.organization_id,
+            actor_id=principal.user_id,
+            action="feedback.delete",
+            resource_type="feedback",
+            resource_id=feedback.id,
+        )
 
     async def acknowledge(self, principal: Principal, feedback_id: uuid.UUID) -> Feedback:
         principal.require(Permission.FEEDBACK_ACKNOWLEDGE)

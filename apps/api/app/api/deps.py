@@ -116,5 +116,6 @@ def get_feedback_service(
     return FeedbackService(
         FeedbackRepository(session),
         ProjectRepository(session),
+        AssignmentRepository(session),
         AuditRepository(session),
     )

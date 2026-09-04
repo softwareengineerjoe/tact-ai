@@ -26,6 +26,9 @@ wins unless an approved ADR changes it.
 * Protected characteristics and private feedback never affect the fit score.
 * Overallocation requires an explicit permission and override reason.
 * Closing a project releases future allocations.
+* Feedback correlates to project participation: it can only be recorded for an
+  employee who worked or is working on the project — i.e. one with a qualifying
+  assignment (`confirmed`, `active`, or `ended`) on that project (FR-011).
 * No physical deletion of projects, feedback, assignments, or audit records.
 
 ## Intentional Simplifications (current implementation)
