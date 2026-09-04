@@ -10,6 +10,9 @@ interface CandidateTableProps {
   pendingEmployeeId?: string;
   /** Current roster status per employee for the selected role, if any. */
   statusByEmployeeId?: ReadonlyMap<string, Assignment['status']>;
+  /** Employee ids currently selected for side-by-side comparison. */
+  comparedEmployeeIds?: ReadonlySet<string>;
+  onToggleCompare?: (employeeId: string) => void;
   onReserve: (candidate: RecommendationCandidate) => void;
   onAssign: (candidate: RecommendationCandidate) => void;
 }
@@ -23,24 +26,29 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 // Statuses where the candidate is fully staffed and no further action is needed.
-const LOCKED_STATUSES = new Set<Assignment['status']>([
-  'confirmed',
-  'active',
-]);
+const LOCKED_STATUSES = new Set<Assignment['status']>(['confirmed', 'active']);
 
 /** Presentational candidate comparison table (MASTER §27 wireframe). Pure. */
 export function CandidateTable({
   candidates,
   pendingEmployeeId,
   statusByEmployeeId,
+  comparedEmployeeIds,
+  onToggleCompare,
   onReserve,
   onAssign,
 }: CandidateTableProps) {
+  const showCompare = onToggleCompare !== undefined;
   return (
     <div className='overflow-hidden rounded-lg border border-border'>
       <table className='w-full text-left text-sm'>
         <thead className='bg-surface-muted text-xs font-medium uppercase tracking-wide text-fg-muted'>
           <tr>
+            {showCompare ? (
+              <th scope='col' className='px-4 py-2.5'>
+                <span className='sr-only'>Compare</span>
+              </th>
+            ) : null}
             <th scope='col' className='px-4 py-2.5'>
               Candidate
             </th>
@@ -65,7 +73,8 @@ export function CandidateTable({
           {candidates.map((candidate) => {
             const isPending = pendingEmployeeId === candidate.employee_id;
             const status = statusByEmployeeId?.get(candidate.employee_id);
-            const isLocked = status !== undefined && LOCKED_STATUSES.has(status);
+            const isLocked =
+              status !== undefined && LOCKED_STATUSES.has(status);
             const isReservedLike =
               status === 'reserved' || status === 'pending_approval';
             return (
@@ -73,6 +82,26 @@ export function CandidateTable({
                 key={candidate.employee_id}
                 className='border-t border-border bg-surface align-top'
               >
+                {showCompare ? (
+                  <td className='px-4 py-3'>
+                    <label className='flex items-center gap-2'>
+                      <input
+                        type='checkbox'
+                        checked={
+                          comparedEmployeeIds?.has(candidate.employee_id) ??
+                          false
+                        }
+                        onChange={() =>
+                          onToggleCompare?.(candidate.employee_id)
+                        }
+                        className='h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary-hover'
+                      />
+                      <span className='sr-only'>
+                        Compare {candidate.display_name}
+                      </span>
+                    </label>
+                  </td>
+                ) : null}
                 <td className='px-4 py-3'>
                   <span className='font-medium text-fg'>
                     {candidate.display_name}

@@ -290,8 +290,8 @@ export function ProjectSetupContainer({
           </h2>
           <div className='mt-2 flex flex-wrap items-center justify-between gap-3'>
             <p className='max-w-prose text-sm text-fg-muted'>
-              Deleting archives the project and releases its allocations. History
-              is preserved and it can be restored by an administrator.
+              Deleting archives the project and releases its allocations.
+              History is preserved and it can be restored by an administrator.
             </p>
             <button
               type='button'

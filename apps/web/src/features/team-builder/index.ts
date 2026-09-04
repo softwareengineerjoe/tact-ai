@@ -1,5 +1,6 @@
 export { TeamBuilderContainer } from './containers/TeamBuilderContainer';
 export { CandidateTable } from './components/CandidateTable';
+export { CandidateComparison } from './components/CandidateComparison';
 export { FitScoreBadge } from './components/FitScoreBadge';
 export { TeamRoster } from './components/TeamRoster';
 export { useProjectRequirements } from './api/useProjectRequirements';

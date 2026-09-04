@@ -15,7 +15,7 @@ from app.core.enums import (
     EmploymentStatus,
     ProficiencyLevel,
 )
-from app.core.exceptions import PermissionDenied, ValidationError
+from app.core.exceptions import ConflictError, PermissionDenied, ValidationError
 from app.models.employee import Employee, EmployeeAvailability, EmployeeSkill, Skill
 from app.models.project import (
     Project,
@@ -23,7 +23,7 @@ from app.models.project import (
     ProjectRoleRequirement,
     RoleRequirementSkill,
 )
-from app.schemas.team import AssignmentCreate
+from app.schemas.team import AssignmentCreate, AssignmentUpdate
 from app.security.permissions import Permission
 from app.security.principal import Principal
 from app.services.assignment_service import AssignmentService
@@ -157,6 +157,12 @@ class StubAssignmentRepo:
     async def find_active_for_employee_role(  # type: ignore[no-untyped-def]
         self, organization_id, project_id, role_requirement_id, employee_id
     ):
+        return None
+
+    async def get(self, organization_id, assignment_id):  # type: ignore[no-untyped-def]
+        for a in self._active:
+            if a.id == assignment_id and a.organization_id == organization_id:
+                return a
         return None
 
     async def add(self, assignment):  # type: ignore[no-untyped-def]
@@ -380,3 +386,79 @@ async def test_overallocation_allowed_with_permission_and_reason() -> None:
     )
     assert result.assignment.status == AssignmentStatus.CONFIRMED
     assert result.warnings  # overallocation warning present
+
+
+# --- Privacy: protected data never affects the fit score (MASTER §32) -----
+
+
+async def _score_one(service: RecommendationService, project_id, requirement_id) -> int:
+    candidates = await service.recommend_for_role(
+        _principal(Permission.TEAM_RECOMMEND),
+        project_id,
+        requirement_id,
+        period_start=PERIOD_START,
+        period_end=PERIOD_END,
+        limit=10,
+    )
+    assert len(candidates) == 1
+    return candidates[0].project_fit_score
+
+
+@pytest.mark.asyncio
+async def test_protected_data_does_not_affect_score() -> None:
+    """Two employees with identical scoring inputs but different personal
+    attributes (name, email, employee code) must score identically. The score
+    depends only on skills, capacity, experience, and time zone (MASTER §32)."""
+    skills = {"Python": ProficiencyLevel.EXPERT, "FastAPI": ProficiencyLevel.ADVANCED}
+    emp_a = _employee(skills=skills)
+    emp_a.display_name = "Alex Doe"
+    emp_a.email = "alex@example.com"
+    emp_a.employee_code = "A-100"
+
+    emp_b = _employee(skills=skills)
+    emp_b.display_name = "Blair Roe"
+    emp_b.email = "blair@example.com"
+    emp_b.employee_code = "B-200"
+
+    requirement = _requirement(["Python", "FastAPI"], ["Docker"])
+    project = Project(id=requirement.project_id, organization_id=ORG, name="Atlas")
+
+    def build(emp: Employee) -> RecommendationService:
+        employees = StubEmployeeRepo([emp], {emp.id: [_availability(100)]})
+        capacity = CapacityService(employees, StubAssignmentRepo())  # type: ignore[arg-type]
+        return RecommendationService(
+            StubProjectRepo(project, requirement),  # type: ignore[arg-type]
+            employees,  # type: ignore[arg-type]
+            capacity,
+        )
+
+    score_a = await _score_one(build(emp_a), project.id, requirement.id)
+    score_b = await _score_one(build(emp_b), project.id, requirement.id)
+    assert score_a == score_b
+
+
+# --- Concurrency: assignment updates cannot silently overwrite (MASTER §32) -
+
+
+@pytest.mark.asyncio
+async def test_update_status_version_conflict() -> None:
+    emp = _employee(skills={"Python": ProficiencyLevel.EXPERT})
+    requirement = _requirement(["Python"], [])
+    reserved = ProjectAssignment(
+        id=uuid.uuid4(),
+        organization_id=ORG,
+        project_id=requirement.project_id,
+        role_requirement_id=requirement.id,
+        employee_id=emp.id,
+        status=AssignmentStatus.RESERVED,
+        allocation_percent=100,
+    )
+    reserved.version = 3
+    service = _assignment_service([reserved], emp, requirement)
+    principal = _principal(Permission.TEAM_ASSIGN)
+    with pytest.raises(ConflictError):
+        await service.update_status(
+            principal,
+            reserved.id,
+            AssignmentUpdate(status=AssignmentStatus.PENDING_APPROVAL, version=1),
+        )

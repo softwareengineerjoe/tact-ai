@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import { SessionContext, type Session } from '@/app/auth/useSession';
 import { CandidateTable } from '@/features/team-builder/components/CandidateTable';
@@ -19,7 +20,11 @@ const candidate: RecommendationCandidate = {
   supervisor_name: 'Elena Vasquez',
 };
 
-function renderWithSession(permissions: string[]) {
+interface RenderOptions {
+  onToggleCompare?: (employeeId: string) => void;
+}
+
+function renderWithSession(permissions: string[], options: RenderOptions = {}) {
   const session: Session = {
     userId: 'u1',
     organizationId: 'o1',
@@ -32,6 +37,7 @@ function renderWithSession(permissions: string[]) {
         candidates={[candidate]}
         onReserve={() => {}}
         onAssign={() => {}}
+        onToggleCompare={options.onToggleCompare}
       />
     </SessionContext.Provider>,
   );
@@ -57,5 +63,21 @@ describe('CandidateTable', () => {
     expect(
       screen.queryByRole('button', { name: 'Assign' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('toggles a candidate for comparison when the checkbox is clicked', async () => {
+    const onToggleCompare = vi.fn();
+    renderWithSession(['team.assign'], { onToggleCompare });
+
+    await userEvent.click(
+      screen.getByRole('checkbox', { name: /Compare Maria Santos/ }),
+    );
+
+    expect(onToggleCompare).toHaveBeenCalledWith(candidate.employee_id);
+  });
+
+  it('omits the compare column when comparison is disabled', () => {
+    renderWithSession(['team.assign']);
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 });

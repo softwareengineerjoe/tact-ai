@@ -137,9 +137,7 @@ export function CreateProjectForm({
           id='business-objective'
           rows={2}
           value={values.business_objective}
-          onChange={(event) =>
-            update('business_objective', event.target.value)
-          }
+          onChange={(event) => update('business_objective', event.target.value)}
           className={cn(inputClass, 'mt-1 py-2')}
         />
       </div>

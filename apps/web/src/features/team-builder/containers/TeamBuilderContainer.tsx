@@ -16,6 +16,7 @@ import { useReserveEmployee } from '@/features/team-builder/api/useReserveEmploy
 import { useAssignEmployee } from '@/features/team-builder/api/useAssignEmployee';
 import { useRemoveAssignment } from '@/features/team-builder/api/useRemoveAssignment';
 import { CandidateTable } from '@/features/team-builder/components/CandidateTable';
+import { CandidateComparison } from '@/features/team-builder/components/CandidateComparison';
 import { TeamRoster } from '@/features/team-builder/components/TeamRoster';
 import type {
   Assignment,
@@ -55,6 +56,23 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
     null,
   );
   const [toRemove, setToRemove] = useState<Assignment | null>(null);
+  const [comparedIds, setComparedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const selectRole = (id: string) => {
+    setRoleId(id);
+    setComparedIds(new Set());
+  };
+
+  const toggleCompare = (employeeId: string) => {
+    setComparedIds((current) => {
+      const next = new Set(current);
+      if (next.has(employeeId)) next.delete(employeeId);
+      else next.add(employeeId);
+      return next;
+    });
+  };
 
   const reserve = useReserveEmployee(projectId);
   const assign = useAssignEmployee(projectId);
@@ -91,6 +109,14 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
   }, [projectId, roleId, periodStartIso, periodEndIso]);
 
   const recommendations = useRecommendations(recommendationParams);
+
+  const comparedCandidates = useMemo(
+    () =>
+      (recommendations.data ?? []).filter((candidate) =>
+        comparedIds.has(candidate.employee_id),
+      ),
+    [recommendations.data, comparedIds],
+  );
 
   const selectedRole = requirements.data?.find((r) => r.id === roleId) ?? null;
 
@@ -249,7 +275,7 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
               <li key={requirement.id}>
                 <button
                   type='button'
-                  onClick={() => setRoleId(requirement.id)}
+                  onClick={() => selectRole(requirement.id)}
                   aria-pressed={isSelected}
                   className={
                     isSelected
@@ -333,6 +359,8 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
           <CandidateTable
             candidates={recommendations.data}
             statusByEmployeeId={statusByEmployeeId}
+            comparedEmployeeIds={comparedIds}
+            onToggleCompare={toggleCompare}
             pendingEmployeeId={
               reserve.isPending
                 ? reserve.variables?.employeeId
@@ -344,6 +372,16 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
             onAssign={setToAssign}
           />
         )}
+        {comparedCandidates.length >= 2 ? (
+          <CandidateComparison
+            candidates={comparedCandidates}
+            onClear={() => setComparedIds(new Set())}
+          />
+        ) : comparedCandidates.length === 1 ? (
+          <p className='text-xs text-fg-muted'>
+            Select at least one more candidate to compare side by side.
+          </p>
+        ) : null}
       </section>
 
       <section aria-labelledby='tb-roster-heading' className='space-y-3'>
