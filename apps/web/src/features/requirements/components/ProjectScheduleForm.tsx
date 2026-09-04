@@ -19,7 +19,7 @@ function toIso(value: string): string | null {
   return value ? new Date(`${value}T00:00:00Z`).toISOString() : null;
 }
 
-/** Form for the project schedule and expected team size. */
+/** Form for the project schedule (start and target end dates). */
 export function ProjectScheduleForm({
   project,
   isPending = false,
@@ -29,23 +29,15 @@ export function ProjectScheduleForm({
   const [targetEndDate, setTargetEndDate] = useState(
     toDateInput(project.target_end_date),
   );
-  const [expectedTeamSize, setExpectedTeamSize] = useState(
-    project.expected_team_size?.toString() ?? '',
-  );
   const [error, setError] = useState<string | null>(null);
 
   const initialStart = toDateInput(project.start_date);
   const initialEnd = toDateInput(project.target_end_date);
-  const initialTeamSize = project.expected_team_size?.toString() ?? '';
-  const isDirty =
-    startDate !== initialStart ||
-    targetEndDate !== initialEnd ||
-    expectedTeamSize !== initialTeamSize;
+  const isDirty = startDate !== initialStart || targetEndDate !== initialEnd;
 
   const handleReset = () => {
     setStartDate(initialStart);
     setTargetEndDate(initialEnd);
-    setExpectedTeamSize(initialTeamSize);
     setError(null);
   };
 
@@ -64,7 +56,6 @@ export function ProjectScheduleForm({
     onSubmit({
       startDate: toIso(startDate),
       targetEndDate: toIso(targetEndDate),
-      expectedTeamSize: expectedTeamSize ? Number(expectedTeamSize) : null,
       version: project.version,
     });
   };
@@ -102,24 +93,6 @@ export function ProjectScheduleForm({
             className={cn(inputClass, 'mt-1')}
           />
         </div>
-      </div>
-
-      <div className='sm:max-w-xs'>
-        <label
-          htmlFor='team-size'
-          className='block text-sm font-medium text-fg'
-        >
-          Expected team size <span className='text-fg-muted'>(optional)</span>
-        </label>
-        <input
-          id='team-size'
-          type='number'
-          min={1}
-          max={999}
-          value={expectedTeamSize}
-          onChange={(event) => setExpectedTeamSize(event.target.value)}
-          className={cn(inputClass, 'mt-1')}
-        />
       </div>
 
       {error ? (

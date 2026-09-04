@@ -24,7 +24,6 @@ export interface ProjectListParams {
 export interface UpdateProjectInput {
   startDate: string | null;
   targetEndDate: string | null;
-  expectedTeamSize: number | null;
   version: number;
 }
 
@@ -33,5 +32,6 @@ export interface UpdateProjectDetailsInput {
   description: string | null;
   businessObjective: string | null;
   priority: ProjectPriority;
+  expectedTeamSize: number | null;
   version: number;
 }

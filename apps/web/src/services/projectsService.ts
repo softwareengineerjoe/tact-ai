@@ -36,7 +36,6 @@ export const projectsService = {
       body: JSON.stringify({
         start_date: input.startDate,
         target_end_date: input.targetEndDate,
-        expected_team_size: input.expectedTeamSize,
         version: input.version,
       }),
     }),
@@ -49,6 +48,7 @@ export const projectsService = {
         description: input.description,
         business_objective: input.businessObjective,
         priority: input.priority,
+        expected_team_size: input.expectedTeamSize,
         version: input.version,
       }),
     }),

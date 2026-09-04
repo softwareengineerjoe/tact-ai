@@ -28,16 +28,21 @@ export function ProjectDetailsForm({
     project.business_objective ?? '',
   );
   const [priority, setPriority] = useState<ProjectPriority>(project.priority);
+  const [expectedTeamSize, setExpectedTeamSize] = useState(
+    project.expected_team_size?.toString() ?? '',
+  );
   const [error, setError] = useState<string | null>(null);
 
   const initialName = project.name;
   const initialDescription = project.description ?? '';
   const initialObjective = project.business_objective ?? '';
+  const initialTeamSize = project.expected_team_size?.toString() ?? '';
   const isDirty =
     name !== initialName ||
     description !== initialDescription ||
     businessObjective !== initialObjective ||
-    priority !== project.priority;
+    priority !== project.priority ||
+    expectedTeamSize !== initialTeamSize;
 
   const inputClass = cn(
     'w-full rounded-md border border-border bg-surface px-3 text-sm',
@@ -49,6 +54,7 @@ export function ProjectDetailsForm({
     setDescription(initialDescription);
     setBusinessObjective(initialObjective);
     setPriority(project.priority);
+    setExpectedTeamSize(initialTeamSize);
     setError(null);
   };
 
@@ -64,6 +70,7 @@ export function ProjectDetailsForm({
       description: description.trim() || null,
       businessObjective: businessObjective.trim() || null,
       priority,
+      expectedTeamSize: expectedTeamSize ? Number(expectedTeamSize) : null,
       version: project.version,
     });
   };
@@ -118,27 +125,46 @@ export function ProjectDetailsForm({
         />
       </div>
 
-      <div className='sm:max-w-xs'>
-        <label
-          htmlFor='detail-priority'
-          className='block text-sm font-medium text-fg'
-        >
-          Priority
-        </label>
-        <select
-          id='detail-priority'
-          value={priority}
-          onChange={(event) =>
-            setPriority(event.target.value as ProjectPriority)
-          }
-          className={cn(inputClass, 'mt-1 h-10 capitalize')}
-        >
-          {PRIORITIES.map((value) => (
-            <option key={value} value={value} className='capitalize'>
-              {value}
-            </option>
-          ))}
-        </select>
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <div>
+          <label
+            htmlFor='detail-priority'
+            className='block text-sm font-medium text-fg'
+          >
+            Priority
+          </label>
+          <select
+            id='detail-priority'
+            value={priority}
+            onChange={(event) =>
+              setPriority(event.target.value as ProjectPriority)
+            }
+            className={cn(inputClass, 'mt-1 h-10 capitalize')}
+          >
+            {PRIORITIES.map((value) => (
+              <option key={value} value={value} className='capitalize'>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor='detail-team-size'
+            className='block text-sm font-medium text-fg'
+          >
+            Expected team size <span className='text-fg-muted'>(optional)</span>
+          </label>
+          <input
+            id='detail-team-size'
+            type='number'
+            min={1}
+            max={999}
+            value={expectedTeamSize}
+            onChange={(event) => setExpectedTeamSize(event.target.value)}
+            className={cn(inputClass, 'mt-1 h-10')}
+          />
+        </div>
       </div>
 
       {error ? (
