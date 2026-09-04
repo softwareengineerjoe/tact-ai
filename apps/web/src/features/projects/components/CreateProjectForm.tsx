@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { cn } from '@/utils/cn';
+import { ConfirmDialog } from '@/components/shared';
 import {
   CreateProjectSchema,
   ProjectPrioritySchema,
@@ -42,6 +43,13 @@ export function CreateProjectForm({
 }: CreateProjectFormProps) {
   const [values, setValues] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  const isDirty =
+    values.name !== EMPTY.name ||
+    values.description !== EMPTY.description ||
+    values.business_objective !== EMPTY.business_objective ||
+    values.priority !== EMPTY.priority;
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -71,6 +79,15 @@ export function CreateProjectForm({
     'w-full rounded-md border border-border bg-surface px-3 text-sm',
     'focus:outline-none focus:ring-2 focus:ring-primary-hover focus:ring-offset-1',
   );
+
+  const handleCancel = () => {
+    if (!onCancel) return;
+    if (isDirty) {
+      setConfirmCancel(true);
+      return;
+    }
+    onCancel();
+  };
 
   return (
     <form onSubmit={handleSubmit} noValidate className='max-w-xl space-y-4'>
@@ -147,7 +164,17 @@ export function CreateProjectForm({
         </select>
       </div>
 
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center justify-end gap-2 border-t border-border pt-4'>
+        {onCancel ? (
+          <button
+            type='button'
+            onClick={handleCancel}
+            disabled={isPending}
+            className='h-10 rounded-md border border-border px-4 text-sm font-medium text-fg hover:bg-surface-muted disabled:opacity-60'
+          >
+            Cancel
+          </button>
+        ) : null}
         <button
           type='submit'
           disabled={isPending}
@@ -155,17 +182,23 @@ export function CreateProjectForm({
         >
           {isPending ? 'Creating…' : 'Create project'}
         </button>
-        {onCancel ? (
-          <button
-            type='button'
-            onClick={onCancel}
-            disabled={isPending}
-            className='h-10 rounded-md border border-border px-4 text-sm font-medium text-fg hover:bg-surface-muted'
-          >
-            Cancel
-          </button>
-        ) : null}
       </div>
+
+      {onCancel ? (
+        <ConfirmDialog
+          open={confirmCancel}
+          title='Discard this project?'
+          description='Your entered details will be lost and no project will be created.'
+          confirmLabel='Discard'
+          cancelLabel='Keep editing'
+          tone='danger'
+          onConfirm={() => {
+            setConfirmCancel(false);
+            onCancel();
+          }}
+          onCancel={() => setConfirmCancel(false)}
+        />
+      ) : null}
     </form>
   );
 }
