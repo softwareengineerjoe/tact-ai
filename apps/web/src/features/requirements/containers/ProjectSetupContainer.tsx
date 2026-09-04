@@ -35,7 +35,9 @@ function toFormValues(requirement: RoleRequirement): RequirementFormValues {
   };
 }
 
-export function ProjectSetupContainer({ projectId }: ProjectSetupContainerProps) {
+export function ProjectSetupContainer({
+  projectId,
+}: ProjectSetupContainerProps) {
   const projectQuery = useProject(projectId);
   const requirementsQuery = useProjectRequirements(projectId);
 
@@ -51,7 +53,9 @@ export function ProjectSetupContainer({ projectId }: ProjectSetupContainerProps)
   );
 
   if (projectQuery.isPending || requirementsQuery.isPending) {
-    return <LoadingState label='Loading project setup' variant='skeleton' rows={4} />;
+    return (
+      <LoadingState label='Loading project setup' variant='skeleton' rows={4} />
+    );
   }
   if (projectQuery.isError && projectQuery.error.status === 403) {
     return <ForbiddenState requiredPermissions={['projects.view']} />;
@@ -73,7 +77,9 @@ export function ProjectSetupContainer({ projectId }: ProjectSetupContainerProps)
   const project = projectQuery.data;
   const requirements = requirementsQuery.data;
 
-  const handleSaveSchedule = (input: Parameters<typeof updateProject.mutate>[0]) => {
+  const handleSaveSchedule = (
+    input: Parameters<typeof updateProject.mutate>[0],
+  ) => {
     updateProject.mutate(input, {
       onSuccess: () => toast.success('Project schedule updated'),
       onError: (error) => toast.error(error.message),

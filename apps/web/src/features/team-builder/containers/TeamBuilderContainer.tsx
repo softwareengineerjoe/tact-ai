@@ -94,6 +94,19 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
 
   const selectedRole = requirements.data?.find((r) => r.id === roleId) ?? null;
 
+  // Current roster status per employee for the selected role, so already
+  // reserved/assigned candidates show their state instead of action buttons.
+  const statusByEmployeeId = useMemo(() => {
+    const map = new Map<string, Assignment['status']>();
+    if (!roleId) return map;
+    for (const assignment of roster.data ?? []) {
+      if (assignment.role_requirement_id !== roleId) continue;
+      if (!FILLING_STATUSES.has(assignment.status)) continue;
+      map.set(assignment.employee_id, assignment.status);
+    }
+    return map;
+  }, [roster.data, roleId]);
+
   const handleReserve = (candidate: RecommendationCandidate) => {
     const expiresAt = new Date();
     expiresAt.setUTCDate(expiresAt.getUTCDate() + 7);
@@ -170,7 +183,10 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
   }
   if (project.isError) {
     return (
-      <ErrorState error={project.error} onRetry={() => void project.refetch()} />
+      <ErrorState
+        error={project.error}
+        onRetry={() => void project.refetch()}
+      />
     );
   }
   if (requirements.isError && requirements.error.status === 403) {
@@ -316,6 +332,7 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
         ) : (
           <CandidateTable
             candidates={recommendations.data}
+            statusByEmployeeId={statusByEmployeeId}
             pendingEmployeeId={
               reserve.isPending
                 ? reserve.variables?.employeeId

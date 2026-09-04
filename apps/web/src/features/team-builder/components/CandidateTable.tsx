@@ -1,18 +1,38 @@
 import { PermissionGate } from '@/components/shared';
-import type { RecommendationCandidate } from '@/features/team-builder/types';
+import type {
+  Assignment,
+  RecommendationCandidate,
+} from '@/features/team-builder/types';
 import { FitScoreBadge } from './FitScoreBadge';
 
 interface CandidateTableProps {
   candidates: readonly RecommendationCandidate[];
   pendingEmployeeId?: string;
+  /** Current roster status per employee for the selected role, if any. */
+  statusByEmployeeId?: ReadonlyMap<string, Assignment['status']>;
   onReserve: (candidate: RecommendationCandidate) => void;
   onAssign: (candidate: RecommendationCandidate) => void;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  recommended: 'Recommended',
+  reserved: 'Reserved',
+  pending_approval: 'Pending approval',
+  confirmed: 'Confirmed',
+  active: 'Active',
+};
+
+// Statuses where the candidate is fully staffed and no further action is needed.
+const LOCKED_STATUSES = new Set<Assignment['status']>([
+  'confirmed',
+  'active',
+]);
 
 /** Presentational candidate comparison table (MASTER §27 wireframe). Pure. */
 export function CandidateTable({
   candidates,
   pendingEmployeeId,
+  statusByEmployeeId,
   onReserve,
   onAssign,
 }: CandidateTableProps) {
@@ -44,6 +64,10 @@ export function CandidateTable({
         <tbody>
           {candidates.map((candidate) => {
             const isPending = pendingEmployeeId === candidate.employee_id;
+            const status = statusByEmployeeId?.get(candidate.employee_id);
+            const isLocked = status !== undefined && LOCKED_STATUSES.has(status);
+            const isReservedLike =
+              status === 'reserved' || status === 'pending_approval';
             return (
               <tr
                 key={candidate.employee_id}
@@ -106,23 +130,42 @@ export function CandidateTable({
                 </td>
                 <td className='px-4 py-3'>
                   <PermissionGate permission='team.assign'>
-                    <div className='flex justify-end gap-2'>
-                      <button
-                        type='button'
-                        onClick={() => onReserve(candidate)}
-                        disabled={isPending}
-                        className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-fg-body transition-colors hover:bg-surface-muted disabled:opacity-50'
-                      >
-                        Reserve
-                      </button>
-                      <button
-                        type='button'
-                        onClick={() => onAssign(candidate)}
-                        disabled={isPending}
-                        className='h-8 rounded-md bg-primary px-3 text-xs font-medium text-primary-fg transition-colors hover:bg-primary-hover disabled:opacity-60'
-                      >
-                        Assign
-                      </button>
+                    <div className='flex items-center justify-end gap-2'>
+                      {status !== undefined ? (
+                        <span
+                          className={
+                            isLocked
+                              ? 'inline-flex items-center gap-1.5 rounded-full bg-primary-subtle px-2.5 py-1 text-xs font-medium text-success'
+                              : 'inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-medium text-fg-body'
+                          }
+                        >
+                          <span
+                            aria-hidden
+                            className='h-1.5 w-1.5 rounded-full bg-current'
+                          />
+                          {STATUS_LABELS[status] ?? status}
+                        </span>
+                      ) : null}
+                      {status === undefined ? (
+                        <button
+                          type='button'
+                          onClick={() => onReserve(candidate)}
+                          disabled={isPending}
+                          className='h-8 rounded-md border border-border bg-surface px-3 text-xs font-medium text-fg-body transition-colors hover:bg-surface-muted disabled:opacity-50'
+                        >
+                          Reserve
+                        </button>
+                      ) : null}
+                      {!isLocked ? (
+                        <button
+                          type='button'
+                          onClick={() => onAssign(candidate)}
+                          disabled={isPending}
+                          className='h-8 rounded-md bg-primary px-3 text-xs font-medium text-primary-fg transition-colors hover:bg-primary-hover disabled:opacity-60'
+                        >
+                          {isReservedLike ? 'Confirm' : 'Assign'}
+                        </button>
+                      ) : null}
                     </div>
                   </PermissionGate>
                 </td>

@@ -68,7 +68,10 @@ export function RequirementForm({
   return (
     <form onSubmit={handleSubmit} noValidate className='space-y-4'>
       <div>
-        <label htmlFor='role-name' className='block text-sm font-medium text-fg'>
+        <label
+          htmlFor='role-name'
+          className='block text-sm font-medium text-fg'
+        >
           Role name
         </label>
         <input
@@ -80,7 +83,11 @@ export function RequirementForm({
           className={cn(inputClass, 'mt-1')}
         />
         {errors.roleName ? (
-          <p id='role-name-error' role='alert' className='mt-1 text-xs text-danger'>
+          <p
+            id='role-name-error'
+            role='alert'
+            className='mt-1 text-xs text-danger'
+          >
             {errors.roleName}
           </p>
         ) : null}
@@ -88,7 +95,10 @@ export function RequirementForm({
 
       <div className='grid grid-cols-2 gap-4'>
         <div>
-          <label htmlFor='headcount' className='block text-sm font-medium text-fg'>
+          <label
+            htmlFor='headcount'
+            className='block text-sm font-medium text-fg'
+          >
             Headcount
           </label>
           <input
@@ -97,7 +107,9 @@ export function RequirementForm({
             min={1}
             max={99}
             value={values.headcount}
-            onChange={(event) => update('headcount', Number(event.target.value))}
+            onChange={(event) =>
+              update('headcount', Number(event.target.value))
+            }
             aria-invalid={!!errors.headcount}
             className={cn(inputClass, 'mt-1')}
           />
