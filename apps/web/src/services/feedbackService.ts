@@ -13,6 +13,9 @@ export const feedbackService = {
   listForProject: (projectId: string, signal?: AbortSignal) =>
     request(`/projects/${projectId}/feedback`, FeedbackListSchema, { signal }),
 
+  listForEmployee: (employeeId: string, signal?: AbortSignal) =>
+    request(`/people/${employeeId}/feedback`, FeedbackListSchema, { signal }),
+
   create: (input: CreateFeedbackInput) =>
     request(`/projects/${input.projectId}/feedback`, FeedbackSchema, {
       method: 'POST',

@@ -50,6 +50,18 @@ class FeedbackService:
             principal.organization_id, project_id, include_private=include_private
         )
 
+    async def list_for_employee(
+        self, principal: Principal, employee_id: uuid.UUID
+    ) -> list[Feedback]:
+        """Feedback an employee has received across projects (People profile and
+        Team Builder). Private feedback is only included when the caller holds
+        ``feedback.view_private`` (MASTER FR-011, 28)."""
+        principal.require(Permission.FEEDBACK_VIEW_SHARED)
+        include_private = principal.has(Permission.FEEDBACK_VIEW_PRIVATE)
+        return await self._feedback.list_for_employee(
+            principal.organization_id, employee_id, include_private=include_private
+        )
+
     async def get(self, principal: Principal, feedback_id: uuid.UUID) -> Feedback:
         feedback = await self._require_feedback(principal, feedback_id)
         if _is_private(feedback):
@@ -142,7 +154,9 @@ class FeedbackService:
             resource_type="feedback",
             resource_id=feedback.id,
         )
-        return feedback
+        # Reload so server-updated columns (updated_at) are refreshed for
+        # serialization (avoids MissingGreenlet on a flushed, expired attribute).
+        return await self._require_feedback(principal, feedback.id)
 
     async def delete(self, principal: Principal, feedback_id: uuid.UUID, *, version: int) -> None:
         principal.require(Permission.FEEDBACK_EDIT)
@@ -180,7 +194,9 @@ class FeedbackService:
             resource_type="feedback",
             resource_id=feedback.id,
         )
-        return feedback
+        # Reload with the employee relationship eager-loaded and server-updated
+        # columns (updated_at) refreshed for serialization (avoids MissingGreenlet).
+        return await self._require_feedback(principal, feedback.id)
 
     async def _require_project(self, principal: Principal, project_id: uuid.UUID) -> None:
         project = await self._projects.get(principal.organization_id, project_id)

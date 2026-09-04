@@ -147,7 +147,9 @@ export function CreateTicketForm({
           <select
             id='ticket-type'
             value={ticketType}
-            onChange={(event) => setTicketType(event.target.value as TicketType)}
+            onChange={(event) =>
+              setTicketType(event.target.value as TicketType)
+            }
             className={cn(inputClass, 'mt-1')}
           >
             {TYPES.map((type) => (

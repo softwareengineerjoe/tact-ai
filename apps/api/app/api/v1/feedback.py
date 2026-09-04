@@ -34,6 +34,16 @@ async def list_project_feedback(
     return [_to_read(f) for f in items]
 
 
+@router.get("/people/{employee_id}/feedback", response_model=list[FeedbackRead])
+async def list_employee_feedback(
+    employee_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    service: FeedbackService = Depends(get_feedback_service),
+) -> list[FeedbackRead]:
+    items = await service.list_for_employee(principal, employee_id)
+    return [_to_read(f) for f in items]
+
+
 @router.get("/feedback/{feedback_id}", response_model=FeedbackRead)
 async def get_feedback(
     feedback_id: uuid.UUID,

@@ -6,8 +6,10 @@ import {
   ErrorState,
   ForbiddenState,
   LoadingState,
+  PermissionGate,
   toast,
 } from '@/components/shared';
+import { EmployeeFeedbackContainer } from '@/features/feedback';
 import { useProject } from '@/features/projects';
 import { useProjectRequirements } from '@/features/team-builder/api/useProjectRequirements';
 import { useProjectTeam } from '@/features/team-builder/api/useProjectTeam';
@@ -383,6 +385,36 @@ export function TeamBuilderContainer({ projectId }: TeamBuilderContainerProps) {
           </p>
         ) : null}
       </section>
+
+      {comparedCandidates.length >= 1 ? (
+        <PermissionGate permission='feedback.view_shared'>
+          <section aria-labelledby='tb-feedback-heading' className='space-y-3'>
+            <h2
+              id='tb-feedback-heading'
+              className='text-base font-semibold text-fg'
+            >
+              Feedback for selected candidates
+            </h2>
+            <p className='text-xs text-fg-muted'>
+              Past project feedback is shown for context only — it never affects
+              the deterministic Project Fit Score.
+            </p>
+            <div className='grid gap-4 md:grid-cols-2'>
+              {comparedCandidates.map((candidate) => (
+                <div key={candidate.employee_id} className='space-y-2'>
+                  <h3 className='text-sm font-medium text-fg'>
+                    {candidate.display_name}
+                  </h3>
+                  <EmployeeFeedbackContainer
+                    employeeId={candidate.employee_id}
+                    employeeName={candidate.display_name}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        </PermissionGate>
+      ) : null}
 
       <section aria-labelledby='tb-roster-heading' className='space-y-3'>
         <h2 id='tb-roster-heading' className='text-base font-semibold text-fg'>

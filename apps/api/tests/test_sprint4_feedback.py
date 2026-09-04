@@ -74,6 +74,20 @@ class StubFeedbackRepo:
             rows = [f for f in rows if f.visibility != FeedbackVisibility.MANAGER_ONLY]
         return rows
 
+    async def list_for_employee(  # type: ignore[no-untyped-def]
+        self, organization_id, employee_id, *, include_private
+    ):
+        rows = [
+            f
+            for f in self._items
+            if f.organization_id == organization_id
+            and f.employee_id == employee_id
+            and f.deleted_at is None
+        ]
+        if not include_private:
+            rows = [f for f in rows if f.visibility != FeedbackVisibility.MANAGER_ONLY]
+        return rows
+
     async def add(self, feedback):  # type: ignore[no-untyped-def]
         self._items.append(feedback)
         return feedback
@@ -203,6 +217,42 @@ async def test_private_feedback_hidden_without_view_private() -> None:
     rows = await service.list_for_project(principal, project.id)
     assert private not in rows
     assert shared in rows
+
+
+@pytest.mark.asyncio
+async def test_list_for_employee_requires_permission() -> None:
+    project = _project()
+    service = _service(project, StubFeedbackRepo())
+    principal = _principal(Permission.FEEDBACK_CREATE)
+    with pytest.raises(PermissionDenied):
+        await service.list_for_employee(principal, uuid.uuid4())
+
+
+@pytest.mark.asyncio
+async def test_list_for_employee_hides_private_without_permission() -> None:
+    project = _project()
+    employee_id = uuid.uuid4()
+    private = _feedback(project.id, visibility=FeedbackVisibility.MANAGER_ONLY)
+    shared = _feedback(project.id, visibility=FeedbackVisibility.MANAGER_AND_EMPLOYEE)
+    private.employee_id = employee_id
+    shared.employee_id = employee_id
+    service = _service(project, StubFeedbackRepo([private, shared]))
+    principal = _principal(Permission.FEEDBACK_VIEW_SHARED)
+    rows = await service.list_for_employee(principal, employee_id)
+    assert private not in rows
+    assert shared in rows
+
+
+@pytest.mark.asyncio
+async def test_list_for_employee_includes_private_with_permission() -> None:
+    project = _project()
+    employee_id = uuid.uuid4()
+    private = _feedback(project.id, visibility=FeedbackVisibility.MANAGER_ONLY)
+    private.employee_id = employee_id
+    service = _service(project, StubFeedbackRepo([private]))
+    principal = _principal(Permission.FEEDBACK_VIEW_SHARED, Permission.FEEDBACK_VIEW_PRIVATE)
+    rows = await service.list_for_employee(principal, employee_id)
+    assert private in rows
 
 
 @pytest.mark.asyncio

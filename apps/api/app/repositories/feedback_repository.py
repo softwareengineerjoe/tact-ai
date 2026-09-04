@@ -56,6 +56,29 @@ class FeedbackRepository:
             stmt = stmt.where(Feedback.visibility != FeedbackVisibility.MANAGER_ONLY)
         return list(await self._session.scalars(stmt))
 
+    async def list_for_employee(
+        self,
+        organization_id: uuid.UUID,
+        employee_id: uuid.UUID,
+        *,
+        include_private: bool,
+    ) -> list[Feedback]:
+        """List the feedback an employee has received across projects. Private
+        (MANAGER_ONLY) feedback is only returned when authorized (MASTER FR-011)."""
+        stmt = (
+            select(Feedback)
+            .where(
+                Feedback.organization_id == organization_id,
+                Feedback.employee_id == employee_id,
+                Feedback.deleted_at.is_(None),
+            )
+            .options(selectinload(Feedback.employee))
+            .order_by(Feedback.created_at.desc())
+        )
+        if not include_private:
+            stmt = stmt.where(Feedback.visibility != FeedbackVisibility.MANAGER_ONLY)
+        return list(await self._session.scalars(stmt))
+
     async def add(self, feedback: Feedback) -> Feedback:
         self._session.add(feedback)
         await self._session.flush()
