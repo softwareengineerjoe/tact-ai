@@ -62,3 +62,29 @@ class AssignmentStatus(StrEnum):
     EXPIRED = "expired"
     DECLINED = "declined"
     CANCELLED = "cancelled"
+
+
+class TicketType(StrEnum):
+    EPIC = "epic"
+    USER_STORY = "user_story"
+    TASK = "task"
+    BUG = "bug"
+    IMPROVEMENT = "improvement"
+    SUPPORT_ISSUE = "support_issue"
+
+
+class TicketStatus(StrEnum):
+    BACKLOG = "backlog"
+    READY = "ready"
+    IN_PROGRESS = "in_progress"
+    BLOCKED = "blocked"
+    IN_REVIEW = "in_review"
+    DONE = "done"
+    CANCELLED = "cancelled"
+
+
+class TicketPriority(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"

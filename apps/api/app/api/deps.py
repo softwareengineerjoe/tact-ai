@@ -15,6 +15,7 @@ from app.core.db import get_session
 from app.repositories.assignment_repository import AssignmentRepository
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.project_repository import ProjectRepository
+from app.repositories.ticket_repository import TicketRepository
 from app.schemas.common import PageParams
 from app.security.permissions import Permission
 from app.security.principal import Principal
@@ -23,6 +24,7 @@ from app.services.capacity_service import CapacityService
 from app.services.employee_service import EmployeeService
 from app.services.project_service import ProjectService
 from app.services.recommendation_service import RecommendationService
+from app.services.ticket_service import TicketService
 
 # Stable demo identifiers so seeded data lines up across restarts.
 DEMO_ORGANIZATION_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -93,3 +95,9 @@ def get_assignment_service(
     assignments = AssignmentRepository(session)
     capacity = CapacityService(employees, assignments)
     return AssignmentService(ProjectRepository(session), employees, assignments, capacity)
+
+
+def get_ticket_service(
+    session: AsyncSession = Depends(get_session),
+) -> TicketService:
+    return TicketService(TicketRepository(session), ProjectRepository(session))

@@ -18,6 +18,7 @@ from app.models.project import (
     ProjectRoleRequirement,
     RoleRequirementSkill,
 )
+from app.models.ticket import Ticket, TicketActivity, TicketComment
 
 __all__ = [
     "Base",
@@ -30,4 +31,7 @@ __all__ = [
     "ProjectAssignment",
     "ProjectRoleRequirement",
     "RoleRequirementSkill",
+    "Ticket",
+    "TicketComment",
+    "TicketActivity",
 ]
