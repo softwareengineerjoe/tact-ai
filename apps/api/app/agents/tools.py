@@ -178,12 +178,32 @@ async def _get_project_feedback(ctx: ToolContext, arguments: dict[str, Any]) -> 
 TOOLS: dict[str, Tool] = {
     "search_projects": Tool(
         name="search_projects",
-        description="List projects the user can view, filtered by status or search text.",
+        description=(
+            "List projects the user can view. Call with NO arguments to list all "
+            "projects. Only pass 'status' when the user explicitly restricts by "
+            "status, and only pass 'search' for a specific name query."
+        ),
         parameters={
             "type": "object",
             "properties": {
-                "search": {"type": "string", "description": "Optional name search."},
-                "status": {"type": "string", "description": "Optional project status filter."},
+                "search": {
+                    "type": "string",
+                    "description": "Optional case-insensitive project name search.",
+                },
+                "status": {
+                    "type": "string",
+                    "description": ("Optional exact project status filter. Omit to include all."),
+                    "enum": [
+                        "draft",
+                        "staffing",
+                        "ready_for_approval",
+                        "active",
+                        "on_hold",
+                        "closing",
+                        "completed",
+                        "archived",
+                    ],
+                },
             },
         },
         run=_search_projects,
@@ -200,13 +220,34 @@ TOOLS: dict[str, Tool] = {
     ),
     "search_employees": Tool(
         name="search_employees",
-        description="Search employees by name, department, or employment status.",
+        description=(
+            "List employees in the directory. Call with NO arguments to list "
+            "everyone. Only pass filters the user explicitly asks for. To find "
+            "who is available, list all and read each employee's employment_status "
+            "rather than pre-filtering."
+        ),
         parameters={
             "type": "object",
             "properties": {
-                "search": {"type": "string"},
-                "department": {"type": "string"},
-                "employment_status": {"type": "string"},
+                "search": {
+                    "type": "string",
+                    "description": "Optional case-insensitive name search.",
+                },
+                "department": {
+                    "type": "string",
+                    "description": "Optional exact department filter.",
+                },
+                "employment_status": {
+                    "type": "string",
+                    "description": "Optional exact employment status filter. Omit to include all.",
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "on_leave",
+                        "unavailable",
+                        "archived",
+                    ],
+                },
             },
         },
         run=_search_employees,
