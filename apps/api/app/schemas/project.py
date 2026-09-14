@@ -58,6 +58,13 @@ class ProjectRead(BaseModel):
     updated_at: datetime
 
 
+class ProjectClosureRead(BaseModel):
+    """Result of closing a project: the updated project + released allocations."""
+
+    project: ProjectRead
+    released_allocations: int
+
+
 class ProjectRoleRequirementCreate(BaseModel):
     role_name: str = Field(min_length=1, max_length=160)
     headcount: int = Field(default=1, ge=1)

@@ -5,5 +5,6 @@ export { ForbiddenState } from './states/ForbiddenState';
 export { PermissionGate } from './PermissionGate';
 export { PageHeader } from './PageHeader';
 export { ConfirmDialog } from './ConfirmDialog';
+export { CommandPalette } from './CommandPalette';
 export { Toaster } from './Toaster';
 export { toast } from './toastStore';

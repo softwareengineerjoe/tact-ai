@@ -10,10 +10,10 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.core.enums import AssignmentStatus
+from app.core.enums import AssignmentStatus, ProjectStatus
 from app.core.exceptions import ConflictError, NotFound, ValidationError
 from app.models.employee import Employee
-from app.models.project import ProjectAssignment, ProjectRoleRequirement
+from app.models.project import Project, ProjectAssignment, ProjectRoleRequirement
 from app.repositories.assignment_repository import AssignmentRepository
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.project_repository import ProjectRepository
@@ -40,6 +40,12 @@ _ALLOWED_TRANSITIONS: dict[AssignmentStatus, frozenset[AssignmentStatus]] = {
 class AssignmentResult:
     assignment: ProjectAssignment
     warnings: list[str]
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectClosureResult:
+    project: Project
+    released_allocations: int
 
 
 class AssignmentService:
@@ -214,6 +220,37 @@ class AssignmentService:
         if assignment.version != version:
             raise ConflictError("Assignment was modified by someone else")
         await self._assignments.soft_delete(assignment)
+
+    async def close_project(
+        self, principal: Principal, project_id: uuid.UUID
+    ) -> ProjectClosureResult:
+        """Close a project and release future team allocations (MASTER FR-002, §32).
+
+        Every capacity-consuming assignment (confirmed, active, reserved, or
+        pending approval) is ended so the employees' future capacity is freed,
+        then the project is marked completed. Rows are preserved as ENDED, never
+        deleted, keeping the audit/revision history intact (MASTER 21).
+        """
+        principal.require(Permission.PROJECTS_CLOSE)
+        project = await self._projects.get(principal.organization_id, project_id)
+        if project is None:
+            raise NotFound("Project not found")
+
+        assignments = await self._assignments.list_for_project(
+            principal.organization_id, project_id
+        )
+        released = 0
+        for assignment in assignments:
+            if self._assignments.is_confirmed(assignment.status) or self._assignments.is_tentative(
+                assignment.status
+            ):
+                assignment.status = AssignmentStatus.ENDED
+                assignment.version += 1
+                released += 1
+
+        project.status = ProjectStatus.COMPLETED
+        project.version += 1
+        return ProjectClosureResult(project=project, released_allocations=released)
 
     async def _require_project(self, principal: Principal, project_id: uuid.UUID) -> None:
         project = await self._projects.get(principal.organization_id, project_id)

@@ -14,6 +14,7 @@ from app.core.enums import (
     AvailabilityStatus,
     EmploymentStatus,
     ProficiencyLevel,
+    ProjectStatus,
 )
 from app.core.exceptions import ConflictError, PermissionDenied, ValidationError
 from app.models.employee import Employee, EmployeeAvailability, EmployeeSkill, Skill
@@ -165,6 +166,13 @@ class StubAssignmentRepo:
                 return a
         return None
 
+    async def list_for_project(self, organization_id, project_id):  # type: ignore[no-untyped-def]
+        return [
+            a
+            for a in self._active
+            if a.organization_id == organization_id and a.project_id == project_id
+        ]
+
     async def add(self, assignment):  # type: ignore[no-untyped-def]
         self.added.append(assignment)
         return assignment
@@ -301,6 +309,7 @@ def _assignment_service(
     active: list[ProjectAssignment], emp: Employee, requirement: ProjectRoleRequirement
 ) -> AssignmentService:
     project = Project(id=requirement.project_id, organization_id=ORG, name="Atlas")
+    project.version = 0
     employees = StubEmployeeRepo([emp], {emp.id: [_availability(100)]})
     assignments = StubAssignmentRepo(active)
     capacity = CapacityService(employees, assignments)  # type: ignore[arg-type]
@@ -462,3 +471,106 @@ async def test_update_status_version_conflict() -> None:
             reserved.id,
             AssignmentUpdate(status=AssignmentStatus.PENDING_APPROVAL, version=1),
         )
+
+
+# --- Closing a project releases future allocations (MASTER FR-002, §32) -----
+
+
+@pytest.mark.asyncio
+async def test_close_project_requires_permission() -> None:
+    emp = _employee(skills={"Python": ProficiencyLevel.EXPERT})
+    requirement = _requirement(["Python"], [])
+    service = _assignment_service([], emp, requirement)
+    with pytest.raises(PermissionDenied):
+        await service.close_project(_principal(Permission.TEAM_ASSIGN), requirement.project_id)
+
+
+@pytest.mark.asyncio
+async def test_close_project_releases_future_allocations() -> None:
+    """Closing a project ends its capacity-consuming assignments so the
+    employee's future capacity is freed, and marks the project completed."""
+    emp = _employee(skills={"Python": ProficiencyLevel.EXPERT})
+    requirement = _requirement(["Python"], [])
+    confirmed = ProjectAssignment(
+        id=uuid.uuid4(),
+        organization_id=ORG,
+        project_id=requirement.project_id,
+        role_requirement_id=requirement.id,
+        employee_id=emp.id,
+        status=AssignmentStatus.CONFIRMED,
+        allocation_percent=100,
+        start_date=PERIOD_START,
+        end_date=PERIOD_END,
+    )
+    reserved = ProjectAssignment(
+        id=uuid.uuid4(),
+        organization_id=ORG,
+        project_id=requirement.project_id,
+        role_requirement_id=requirement.id,
+        employee_id=emp.id,
+        status=AssignmentStatus.RESERVED,
+        allocation_percent=50,
+        start_date=PERIOD_START,
+        end_date=PERIOD_END,
+    )
+    confirmed.version = 0
+    reserved.version = 0
+    service = _assignment_service([confirmed, reserved], emp, requirement)
+
+    result = await service.close_project(
+        _principal(Permission.PROJECTS_CLOSE), requirement.project_id
+    )
+
+    assert result.project.status == ProjectStatus.COMPLETED
+    assert result.released_allocations == 2
+    assert confirmed.status == AssignmentStatus.ENDED
+    assert reserved.status == AssignmentStatus.ENDED
+
+
+@pytest.mark.asyncio
+async def test_close_project_capacity_freed_after_close() -> None:
+    """After closing, the ended allocation no longer consumes capacity."""
+    emp = _employee(skills={"Python": ProficiencyLevel.EXPERT})
+    requirement = _requirement(["Python"], [])
+    confirmed = ProjectAssignment(
+        id=uuid.uuid4(),
+        organization_id=ORG,
+        project_id=requirement.project_id,
+        role_requirement_id=requirement.id,
+        employee_id=emp.id,
+        status=AssignmentStatus.CONFIRMED,
+        allocation_percent=100,
+        start_date=PERIOD_START,
+        end_date=PERIOD_END,
+    )
+    employees = StubEmployeeRepo([emp], {emp.id: [_availability(100)]})
+    assignments = StubAssignmentRepo([confirmed])
+    capacity = CapacityService(employees, assignments)  # type: ignore[arg-type]
+    project = Project(id=requirement.project_id, organization_id=ORG, name="Atlas")
+    confirmed.version = 0
+    project.version = 0
+    service = AssignmentService(
+        StubProjectRepo(project, requirement),  # type: ignore[arg-type]
+        employees,  # type: ignore[arg-type]
+        assignments,  # type: ignore[arg-type]
+        capacity,
+    )
+
+    before = await capacity.compute_for_employee(
+        ORG,
+        emp,
+        period_start=PERIOD_START,
+        period_end=PERIOD_END,
+    )
+    assert before.confirmed_allocation_percent == 100
+
+    await service.close_project(_principal(Permission.PROJECTS_CLOSE), requirement.project_id)
+
+    after = await capacity.compute_for_employee(
+        ORG,
+        emp,
+        period_start=PERIOD_START,
+        period_end=PERIOD_END,
+    )
+    assert after.confirmed_allocation_percent == 0
+    assert after.remaining_capacity_percent == 100

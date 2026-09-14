@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { PageHeader } from '@/components/shared';
+import { PeopleIcon } from '@/components/icons';
 import { PeopleDirectoryContainer } from '@/features/people';
 
 export function PeopleDirectoryPage() {
@@ -8,7 +9,12 @@ export function PeopleDirectoryPage() {
 
   return (
     <main aria-labelledby='people-title'>
-      <PageHeader id='people-title' title='People' />
+      <PageHeader
+        id='people-title'
+        icon={<PeopleIcon className='h-5 w-5' />}
+        title='People'
+        description='Search the internal directory by name, role, or skill.'
+      />
       <div className='mb-4'>
         <label htmlFor='people-search' className='sr-only'>
           Search people

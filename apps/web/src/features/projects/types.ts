@@ -2,8 +2,12 @@ import type { z } from 'zod';
 
 import type {
   CreateProjectSchema,
+  ProjectClosureSchema,
+  ProjectHealthSchema,
   ProjectListSchema,
+  ProjectOverviewSchema,
   ProjectPrioritySchema,
+  ProjectProgressSchema,
   ProjectSchema,
   ProjectStatusSchema,
 } from './schemas';
@@ -13,6 +17,10 @@ export type ProjectList = z.infer<typeof ProjectListSchema>;
 export type ProjectStatus = z.infer<typeof ProjectStatusSchema>;
 export type ProjectPriority = z.infer<typeof ProjectPrioritySchema>;
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
+export type ProjectOverview = z.infer<typeof ProjectOverviewSchema>;
+export type ProjectProgress = z.infer<typeof ProjectProgressSchema>;
+export type ProjectHealth = z.infer<typeof ProjectHealthSchema>;
+export type ProjectClosure = z.infer<typeof ProjectClosureSchema>;
 
 export interface ProjectListParams {
   page?: number;

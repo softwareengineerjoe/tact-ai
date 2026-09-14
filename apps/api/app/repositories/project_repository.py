@@ -59,6 +59,19 @@ class ProjectRepository:
         items = list(await self._session.scalars(stmt))
         return items, total or 0
 
+    async def count_by_status(self, organization_id: uuid.UUID) -> dict[str, int]:
+        """Non-deleted project counts grouped by status (dashboard aggregate)."""
+        stmt = (
+            select(Project.status, func.count())
+            .where(
+                Project.organization_id == organization_id,
+                Project.deleted_at.is_(None),
+            )
+            .group_by(Project.status)
+        )
+        rows = await self._session.execute(stmt)
+        return {status: count for status, count in rows.all()}
+
     async def add(self, project: Project) -> Project:
         self._session.add(project)
         await self._session.flush()

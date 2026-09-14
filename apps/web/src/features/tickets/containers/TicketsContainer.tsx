@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   EmptyState,
@@ -15,22 +15,78 @@ import { useCreateTicket } from '@/features/tickets/api/useCreateTicket';
 import { useTransitionTicket } from '@/features/tickets/api/useTransitionTicket';
 import { useCommentTicket } from '@/features/tickets/api/useCommentTicket';
 import { TicketBoard } from '@/features/tickets/components/TicketBoard';
+import {
+  TicketFilters,
+  type TicketFilterValues,
+} from '@/features/tickets/components/TicketFilters';
+import { TicketSummary } from '@/features/tickets/components/TicketSummary';
 import { CreateTicketForm } from '@/features/tickets/components/CreateTicketForm';
 import { TicketDetailDialog } from '@/features/tickets/components/TicketDetailDialog';
+import { isTicketOverdue } from '@/features/tickets/utils';
 import type { CreateTicketInput, TicketStatus } from '@/features/tickets/types';
 
-/** Owns the global ticket board: data, the create dialog, and the detail drawer. */
+const EMPTY_FILTERS: TicketFilterValues = {
+  search: '',
+  projectId: '',
+  priority: '',
+};
+
+/** Owns the global ticket board: data, filters, the create dialog, and the detail drawer. */
 export function TicketsContainer() {
   const tickets = useTickets({ pageSize: 100 });
   const projects = useProjects({ pageSize: 100 });
 
   const [isCreating, setIsCreating] = useState(false);
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<TicketFilterValues>(EMPTY_FILTERS);
 
   const detail = useTicket(openTicketId);
   const create = useCreateTicket();
   const transition = useTransitionTicket();
   const comment = useCommentTicket();
+
+  const projectItems = useMemo(
+    () => projects.data?.items ?? [],
+    [projects.data?.items],
+  );
+  const projectNames = useMemo(
+    () => Object.fromEntries(projectItems.map((p) => [p.id, p.name])),
+    [projectItems],
+  );
+
+  const allTickets = useMemo(
+    () => tickets.data?.items ?? [],
+    [tickets.data?.items],
+  );
+
+  const summary = useMemo(() => {
+    const open = allTickets.filter(
+      (t) => t.status !== 'done' && t.status !== 'cancelled',
+    ).length;
+    return {
+      total: allTickets.length,
+      open,
+      blocked: allTickets.filter((t) => t.status === 'blocked').length,
+      overdue: allTickets.filter((t) => isTicketOverdue(t)).length,
+      done: allTickets.filter((t) => t.status === 'done').length,
+    };
+  }, [allTickets]);
+
+  const filteredTickets = useMemo(() => {
+    const search = filters.search.trim().toLowerCase();
+    return allTickets.filter((ticket) => {
+      if (filters.projectId !== '' && ticket.project_id !== filters.projectId) {
+        return false;
+      }
+      if (filters.priority !== '' && ticket.priority !== filters.priority) {
+        return false;
+      }
+      if (search !== '' && !ticket.title.toLowerCase().includes(search)) {
+        return false;
+      }
+      return true;
+    });
+  }, [allTickets, filters]);
 
   const handleCreate = (input: Omit<CreateTicketInput, 'assigneeId'>) => {
     create.mutate(
@@ -87,13 +143,17 @@ export function TicketsContainer() {
     );
   }
 
+  const hasTickets = allTickets.length > 0;
+  const hasFilteredTickets = filteredTickets.length > 0;
+  const isFiltering =
+    filters.search !== '' ||
+    filters.projectId !== '' ||
+    filters.priority !== '';
+
   return (
     <div className='space-y-4'>
-      <div className='flex items-center justify-between gap-2'>
-        <p className='text-sm text-fg-muted'>
-          {tickets.data.total} ticket{tickets.data.total === 1 ? '' : 's'}{' '}
-          across your projects
-        </p>
+      <div className='flex flex-wrap items-center justify-between gap-3'>
+        <TicketSummary {...summary} />
         <PermissionGate permission='tickets.create'>
           {!isCreating ? (
             <button
@@ -111,7 +171,7 @@ export function TicketsContainer() {
         <div className='rounded-lg border border-border bg-surface p-4 shadow-xs'>
           <h2 className='mb-3 font-medium text-fg'>New ticket</h2>
           <CreateTicketForm
-            projects={projects.data?.items ?? []}
+            projects={projectItems}
             isPending={create.isPending}
             onSubmit={handleCreate}
             onCancel={() => setIsCreating(false)}
@@ -119,7 +179,7 @@ export function TicketsContainer() {
         </div>
       ) : null}
 
-      {tickets.data.items.length === 0 && !isCreating ? (
+      {!hasTickets && !isCreating ? (
         <EmptyState
           title='No tickets yet'
           description='Create your first ticket to start tracking work.'
@@ -131,8 +191,36 @@ export function TicketsContainer() {
         />
       ) : null}
 
-      {tickets.data.items.length > 0 ? (
-        <TicketBoard tickets={tickets.data.items} onOpen={setOpenTicketId} />
+      {hasTickets ? (
+        <>
+          <TicketFilters
+            values={filters}
+            projects={projectItems}
+            onChange={setFilters}
+            onClear={() => setFilters(EMPTY_FILTERS)}
+          />
+
+          {hasFilteredTickets ? (
+            <TicketBoard
+              tickets={filteredTickets}
+              onOpen={setOpenTicketId}
+              projectNames={projectNames}
+            />
+          ) : (
+            <EmptyState
+              title='No matching tickets'
+              description={
+                isFiltering
+                  ? 'Try adjusting your search or filters.'
+                  : 'Nothing to show.'
+              }
+              action={{
+                label: 'Clear filters',
+                onClick: () => setFilters(EMPTY_FILTERS),
+              }}
+            />
+          )}
+        </>
       ) : null}
 
       {openTicketId !== null && detail.data ? (

@@ -8,7 +8,7 @@ validated Entra ID token — the interface below stays identical.
 import uuid
 from collections.abc import Callable
 
-from fastapi import Depends, Query
+from fastapi import Depends, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.provider import (
@@ -23,18 +23,27 @@ from app.repositories.audit_repository import AuditRepository
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.feedback_repository import FeedbackRepository
+from app.repositories.import_repository import ImportRepository
+from app.repositories.notification_repository import NotificationRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.ticket_repository import TicketRepository
 from app.schemas.common import PageParams
+from app.security.demo_roles import resolve_demo_role
 from app.security.permissions import Permission
 from app.security.principal import Principal
 from app.services.assignment_service import AssignmentService
 from app.services.assistant_service import AssistantService
 from app.services.capacity_service import CapacityService
+from app.services.dashboard_service import DashboardService
 from app.services.employee_service import EmployeeService
 from app.services.feedback_service import FeedbackService
+from app.services.import_service import ImportService
+from app.services.member_dashboard_service import MemberDashboardService
+from app.services.notification_service import NotificationService
+from app.services.project_overview_service import ProjectOverviewService
 from app.services.project_service import ProjectService
 from app.services.recommendation_service import RecommendationService
+from app.services.report_service import ReportService
 from app.services.ticket_service import TicketService
 
 # Stable demo identifiers so seeded data lines up across restarts.
@@ -42,17 +51,22 @@ DEMO_ORGANIZATION_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000002")
 
 
-async def get_principal() -> Principal:
+async def get_principal(
+    x_demo_role: str | None = Header(default=None, alias="X-Demo-Role"),
+) -> Principal:
     """Resolve the acting principal.
 
-    MVP/local: a full-permission demo manager. Replace with Entra ID JWT
-    validation in Phase 2 without changing the dependency signature.
+    MVP/local: a seeded demo user whose permissions come from the selected demo
+    role (MASTER FR-001). No header (or an unknown role) resolves to the
+    full-access administrator, preserving the default demo experience. Replace
+    with Entra ID JWT validation in Phase 2 without changing the signature.
     """
+    role = resolve_demo_role(x_demo_role)
     return Principal(
         user_id=DEMO_USER_ID,
         organization_id=DEMO_ORGANIZATION_ID,
-        roles=frozenset({"project_manager"}),
-        permissions=frozenset(Permission),
+        roles=frozenset({role.role_name}),
+        permissions=role.permissions,
     )
 
 
@@ -126,6 +140,69 @@ def get_feedback_service(
         ProjectRepository(session),
         AssignmentRepository(session),
         AuditRepository(session),
+    )
+
+
+def get_dashboard_service(
+    session: AsyncSession = Depends(get_session),
+) -> DashboardService:
+    employees = EmployeeRepository(session)
+    capacity = CapacityService(employees, AssignmentRepository(session))
+    return DashboardService(
+        ProjectRepository(session),
+        TicketRepository(session),
+        capacity,
+    )
+
+
+def get_project_overview_service(
+    session: AsyncSession = Depends(get_session),
+) -> ProjectOverviewService:
+    return ProjectOverviewService(
+        ProjectRepository(session),
+        TicketRepository(session),
+        AssignmentRepository(session),
+    )
+
+
+def get_report_service(
+    session: AsyncSession = Depends(get_session),
+) -> ReportService:
+    return ReportService(
+        ProjectRepository(session),
+        TicketRepository(session),
+        AssignmentRepository(session),
+    )
+
+
+def get_notification_service(
+    session: AsyncSession = Depends(get_session),
+) -> NotificationService:
+    return NotificationService(NotificationRepository(session))
+
+
+def get_import_service(
+    session: AsyncSession = Depends(get_session),
+) -> ImportService:
+    return ImportService(
+        ImportRepository(session),
+        EmployeeRepository(session),
+    )
+
+
+def get_member_dashboard_service(
+    session: AsyncSession = Depends(get_session),
+) -> MemberDashboardService:
+    employees = EmployeeRepository(session)
+    assignments = AssignmentRepository(session)
+    capacity = CapacityService(employees, assignments)
+    return MemberDashboardService(
+        employees,
+        assignments,
+        TicketRepository(session),
+        ProjectRepository(session),
+        FeedbackRepository(session),
+        capacity,
     )
 
 

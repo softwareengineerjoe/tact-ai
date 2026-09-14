@@ -64,7 +64,7 @@ export function TicketDetailDialog({
         role='dialog'
         aria-modal='true'
         aria-labelledby='ticket-detail-title'
-        className='relative flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-border bg-surface shadow-lg'
+        className='no-scrollbar relative flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-border bg-surface shadow-lg'
       >
         <header className='flex items-start justify-between gap-3 border-b border-border p-5'>
           <div className='space-y-1'>

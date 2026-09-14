@@ -24,6 +24,8 @@ from app.models.feedback import (
     FeedbackAcknowledgement,
     FeedbackRevision,
 )
+from app.models.import_job import ImportJob, ImportRowResult
+from app.models.notification import Notification
 from app.models.organization import Organization
 from app.models.project import (
     Project,
@@ -52,6 +54,9 @@ __all__ = [
     "FeedbackAcknowledgement",
     "FeedbackAccessLog",
     "AuditLog",
+    "Notification",
+    "ImportJob",
+    "ImportRowResult",
     "ChatSession",
     "ChatMessage",
     "AIToolExecution",

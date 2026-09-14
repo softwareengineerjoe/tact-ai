@@ -7,16 +7,18 @@ with the master, the master wins unless an approved ADR changes it.
 
 ## Roles
 
-See MASTER section 10 for the full definitions:
+TACT AI ships **five** roles for the current phase (see MASTER section 10 and
+[ADR-0002](adr/0002-reduce-role-catalog.md)):
 
 * Organization Administrator
 * Resource Manager
 * Project Manager
-* Team Lead or Reviewer
-* Team Member
 * Executive Viewer
-* HR or People Partner
-* Auditor
+* Team Member
+
+Three further roles — Team Lead or Reviewer, HR or People Partner, and Auditor —
+are **deferred** to a later phase and, when reintroduced, are expressed as
+subsets/combinations of the section 11 permissions.
 
 ## Permissions
 

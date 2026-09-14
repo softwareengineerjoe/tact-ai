@@ -4,8 +4,11 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     assistant,
+    dashboard,
     feedback,
+    imports,
     me,
+    notifications,
     people,
     project_requirements,
     projects,
@@ -22,3 +25,6 @@ api_router.include_router(team.router)
 api_router.include_router(tickets.router)
 api_router.include_router(feedback.router)
 api_router.include_router(assistant.router)
+api_router.include_router(dashboard.router)
+api_router.include_router(notifications.router)
+api_router.include_router(imports.router)

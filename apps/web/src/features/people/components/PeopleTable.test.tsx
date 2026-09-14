@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
 
 import { PeopleTable } from '@/features/people/components/PeopleTable';
 import type { Employee } from '@/features/people/types';
+
+function renderTable(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 function makeEmployee(overrides: Partial<Employee>): Employee {
   return {
@@ -26,7 +32,7 @@ function makeEmployee(overrides: Partial<Employee>): Employee {
 
 describe('PeopleTable', () => {
   it('renders rows without selection controls when onSelect is omitted', () => {
-    render(<PeopleTable employees={[makeEmployee({})]} />);
+    renderTable(<PeopleTable employees={[makeEmployee({})]} />);
 
     expect(screen.getByText('Maria Santos')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
@@ -35,7 +41,7 @@ describe('PeopleTable', () => {
   it('invokes onSelect with the employee when a selectable name is clicked', async () => {
     const onSelect = vi.fn();
     const employee = makeEmployee({ id: 'e2', display_name: 'Daniel Cruz' });
-    render(<PeopleTable employees={[employee]} onSelect={onSelect} />);
+    renderTable(<PeopleTable employees={[employee]} onSelect={onSelect} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Daniel Cruz' }));
 
@@ -44,7 +50,7 @@ describe('PeopleTable', () => {
 
   it('marks the selected row via aria-selected', () => {
     const employee = makeEmployee({ id: 'e3' });
-    render(
+    renderTable(
       <PeopleTable
         employees={[employee]}
         selectedId='e3'

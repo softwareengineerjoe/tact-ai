@@ -1,5 +1,10 @@
 import { request, requestVoid } from '@/services/httpClient';
-import { ProjectListSchema, ProjectSchema } from '@/features/projects/schemas';
+import {
+  ProjectClosureSchema,
+  ProjectListSchema,
+  ProjectOverviewSchema,
+  ProjectSchema,
+} from '@/features/projects/schemas';
 import type {
   CreateProjectInput,
   ProjectListParams,
@@ -22,6 +27,9 @@ export const projectsService = {
 
   get: (projectId: string, signal?: AbortSignal) =>
     request(`/projects/${projectId}`, ProjectSchema, { signal }),
+
+  getOverview: (projectId: string, signal?: AbortSignal) =>
+    request(`/projects/${projectId}/overview`, ProjectOverviewSchema, { signal }),
 
   create: (input: CreateProjectInput) =>
     request('/projects', ProjectSchema, {
@@ -55,4 +63,10 @@ export const projectsService = {
 
   remove: (projectId: string) =>
     requestVoid(`/projects/${projectId}`, { method: 'DELETE' }),
+
+  close: (projectId: string) =>
+    request(`/projects/${projectId}/close`, ProjectClosureSchema, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    }),
 };

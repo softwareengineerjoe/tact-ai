@@ -36,6 +36,12 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
 
       <div className='flex items-center justify-between gap-2 border-t border-border px-5 py-3'>
         <div className='flex items-center gap-1'>
+          <Link
+            to={`/projects/${project.id}`}
+            className='rounded-md px-2.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg'
+          >
+            Overview
+          </Link>
           <PermissionGate permission='projects.edit'>
             <Link
               to={`/projects/${project.id}/setup`}

@@ -40,6 +40,36 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
   cancelled: 'Cancelled',
 };
 
+// Column header accent dot per status (color + label, never color alone).
+export const STATUS_DOT: Record<TicketStatus, string> = {
+  backlog: 'bg-fg-muted',
+  ready: 'bg-info',
+  in_progress: 'bg-primary',
+  blocked: 'bg-danger',
+  in_review: 'bg-warning',
+  done: 'bg-success',
+  cancelled: 'bg-fg-muted',
+};
+
+// Priority ordering (high → low) for sorting within a column.
+export const PRIORITY_ORDER: Record<TicketPriority, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+/** A ticket is overdue when past its due date and still open. */
+export function isTicketOverdue(
+  ticket: { due_date: string | null; status: TicketStatus },
+  now: Date = new Date(),
+): boolean {
+  if (ticket.due_date === null) return false;
+  if (ticket.status === 'done' || ticket.status === 'cancelled') return false;
+  return new Date(ticket.due_date).getTime() < now.getTime();
+}
+
+
 // Legal next statuses per the service state machine (kept in sync with backend).
 export const ALLOWED_NEXT: Record<TicketStatus, readonly TicketStatus[]> = {
   backlog: ['ready', 'cancelled'],

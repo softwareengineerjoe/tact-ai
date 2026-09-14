@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import (
     get_employee_service,
+    get_member_dashboard_service,
     get_principal,
     page_params,
     require_permission,
@@ -22,9 +23,11 @@ from app.schemas.employee import (
     EmployeeSkillsPut,
     EmployeeUpdate,
 )
+from app.schemas.member_dashboard import MemberDashboardRead
 from app.security.permissions import Permission
 from app.security.principal import Principal
 from app.services.employee_service import EmployeeService
+from app.services.member_dashboard_service import MemberDashboardService
 
 router = APIRouter(prefix="/people", tags=["people"])
 
@@ -75,6 +78,15 @@ async def get_person(
 ) -> EmployeeRead:
     employee = await service.get_employee(principal, employee_id)
     return EmployeeRead.model_validate(employee)
+
+
+@router.get("/{employee_id}/dashboard", response_model=MemberDashboardRead)
+async def get_person_dashboard(
+    employee_id: uuid.UUID,
+    principal: Principal = Depends(require_permission(Permission.PEOPLE_VIEW)),
+    service: MemberDashboardService = Depends(get_member_dashboard_service),
+) -> MemberDashboardRead:
+    return await service.get_overview(principal, employee_id)
 
 
 @router.patch("/{employee_id}", response_model=EmployeeRead)

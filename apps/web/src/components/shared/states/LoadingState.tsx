@@ -20,8 +20,13 @@ export function LoadingState({
         Array.from({ length: rows }).map((_, index) => (
           <div
             key={index}
-            className='h-12 animate-pulse rounded-md bg-surface-muted'
-          />
+            className='relative h-12 overflow-hidden rounded-md bg-surface-muted'
+          >
+            <span
+              aria-hidden
+              className='animate-shimmer absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent'
+            />
+          </div>
         ))
       ) : (
         <div className='h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent' />

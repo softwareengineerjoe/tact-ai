@@ -1,27 +1,34 @@
 import { cn } from '@/utils/cn';
 import type { ChatMessage } from '@/features/assistant/types';
+import { AssistantAvatar } from './AssistantAvatar';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
 }
 
-/** Presentational chat bubble: user on the right (green wash), assistant on white. */
+/** Presentational chat bubble: user on the right (green wash), assistant on white with the Tia mascot. */
 export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
   return (
     <div
-      className={cn('flex', isUser ? 'justify-end' : 'justify-start')}
+      className={cn(
+        'animate-rise-in flex items-end gap-2',
+        isUser ? 'justify-end' : 'justify-start',
+      )}
       data-testid={`chat-message-${message.role}`}
     >
+      {!isUser ? (
+        <AssistantAvatar size={32} still className='mb-0.5 shrink-0' />
+      ) : null}
       <div
         className={cn(
-          'max-w-[75%] rounded-lg border p-3 text-sm',
+          'max-w-[75%] rounded-2xl border p-3.5 text-sm shadow-xs',
           isUser
-            ? 'border-primary-subtle bg-primary-subtle text-fg-body'
-            : 'border-border bg-surface text-fg-body',
+            ? 'rounded-br-sm border-primary/20 bg-primary text-primary-fg'
+            : 'rounded-bl-sm border-border bg-surface text-fg-body',
         )}
       >
-        <p className='whitespace-pre-wrap'>{message.content}</p>
+        <p className='whitespace-pre-wrap leading-relaxed'>{message.content}</p>
 
         {message.role === 'assistant' ? (
           <AssistantMeta message={message} />
@@ -38,6 +45,7 @@ function AssistantMeta({ message }: ChatMessageBubbleProps) {
   if (
     !hasCitations &&
     !hasWarnings &&
+    !message.reasoning_summary &&
     !message.suggested_next_action &&
     !message.model_version
   ) {
@@ -46,6 +54,13 @@ function AssistantMeta({ message }: ChatMessageBubbleProps) {
 
   return (
     <div className='mt-2 space-y-1 border-t border-border pt-2 text-xs text-fg-muted'>
+      {message.reasoning_summary ? (
+        <p>
+          <span className='font-medium'>Reasoning:</span>{' '}
+          {message.reasoning_summary}
+        </p>
+      ) : null}
+
       {hasCitations ? (
         <p>
           <span className='font-medium'>Sources:</span>{' '}

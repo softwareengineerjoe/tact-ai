@@ -2,6 +2,8 @@ export { TicketsContainer } from './containers/TicketsContainer';
 export { TicketBoard } from './components/TicketBoard';
 export { TicketCard } from './components/TicketCard';
 export { TicketStatusBadge } from './components/TicketStatusBadge';
+export { TicketSummary } from './components/TicketSummary';
+export { TicketFilters } from './components/TicketFilters';
 export { useTickets } from './api/useTickets';
 export { useTicket } from './api/useTicket';
 export { useCreateTicket } from './api/useCreateTicket';

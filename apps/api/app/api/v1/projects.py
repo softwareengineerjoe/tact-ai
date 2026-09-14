@@ -5,22 +5,31 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import (
+    get_assignment_service,
     get_principal,
+    get_project_overview_service,
     get_project_service,
+    get_report_service,
     page_params,
     require_permission,
 )
 from app.schemas.common import Page, PageParams
 from app.schemas.project import (
+    ProjectClosureRead,
     ProjectCreate,
     ProjectRead,
     ProjectRoleRequirementCreate,
     ProjectRoleRequirementRead,
     ProjectUpdate,
 )
+from app.schemas.project_overview import ProjectOverviewRead
+from app.schemas.report import WeeklyStatusReportRead
 from app.security.permissions import Permission
 from app.security.principal import Principal
+from app.services.assignment_service import AssignmentService
+from app.services.project_overview_service import ProjectOverviewService
 from app.services.project_service import ProjectService
+from app.services.report_service import ReportService
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -68,6 +77,24 @@ async def get_project(
     return ProjectRead.model_validate(project)
 
 
+@router.get("/{project_id}/overview", response_model=ProjectOverviewRead)
+async def get_project_overview(
+    project_id: uuid.UUID,
+    principal: Principal = Depends(require_permission(Permission.PROJECTS_VIEW)),
+    service: ProjectOverviewService = Depends(get_project_overview_service),
+) -> ProjectOverviewRead:
+    return await service.get_overview(principal, project_id)
+
+
+@router.get("/{project_id}/reports/weekly-status", response_model=WeeklyStatusReportRead)
+async def get_weekly_status_report(
+    project_id: uuid.UUID,
+    principal: Principal = Depends(require_permission(Permission.REPORTS_VIEW)),
+    service: ReportService = Depends(get_report_service),
+) -> WeeklyStatusReportRead:
+    return await service.generate_weekly_status(principal, project_id)
+
+
 @router.patch("/{project_id}", response_model=ProjectRead)
 async def update_project(
     project_id: uuid.UUID,
@@ -77,6 +104,19 @@ async def update_project(
 ) -> ProjectRead:
     project = await service.update_project(principal, project_id, payload)
     return ProjectRead.model_validate(project)
+
+
+@router.post("/{project_id}/close", response_model=ProjectClosureRead)
+async def close_project(
+    project_id: uuid.UUID,
+    principal: Principal = Depends(require_permission(Permission.PROJECTS_CLOSE)),
+    service: AssignmentService = Depends(get_assignment_service),
+) -> ProjectClosureRead:
+    result = await service.close_project(principal, project_id)
+    return ProjectClosureRead(
+        project=ProjectRead.model_validate(result.project),
+        released_allocations=result.released_allocations,
+    )
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)

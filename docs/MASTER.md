@@ -262,6 +262,13 @@ Close the Project and Release Allocations
 
 # 10. User Roles and Permissions
 
+TACT AI ships **five** roles for the current phase. Each maps to a distinct
+persona with its own bundle of the discrete permissions in section 11. Three
+further roles — Team Lead or Reviewer, HR or People Partner, and Auditor — are
+**deferred** to a later phase and are described in section 10.6; when
+reintroduced they are expressed as subsets/combinations of the same section 11
+permissions (see [ADR-0002](adr/0002-reduce-role-catalog.md)).
+
 ## 10.1 Organization Administrator
 
 Can manage:
@@ -297,15 +304,16 @@ Can manage authorized projects, including:
 * Project reports
 * Project feedback
 
-## 10.4 Team Lead or Reviewer
+## 10.4 Executive Viewer
 
 Can access:
 
-* Assigned projects
-* Team tickets
-* Reviews
-* Blockers
-* Limited project contribution information
+* Aggregated project reports
+* Project health
+* Capacity summaries
+* Staffing summaries
+
+Executive viewers should not receive unrestricted access to private employee feedback.
 
 ## 10.5 Team Member
 
@@ -318,24 +326,31 @@ Can access:
 * Shared project information
 * Feedback shared directly with them
 
-## 10.6 Executive Viewer
+## 10.6 Deferred Roles (later phase)
 
-Can access:
+The following roles are documented for direction but are **not implemented** in
+the current phase (see [ADR-0002](adr/0002-reduce-role-catalog.md)). Until they
+ship, the nearest existing role is used.
 
-* Aggregated project reports
-* Project health
-* Capacity summaries
-* Staffing summaries
+### Team Lead or Reviewer
 
-Executive viewers should not receive unrestricted access to private employee feedback.
+A project-scoped subset of Project Manager / Team Member. Can access:
 
-## 10.7 HR or People Partner
+* Assigned projects
+* Team tickets
+* Reviews
+* Blockers
+* Limited project contribution information
 
-Can access employee or feedback information only when specifically authorized.
+### HR or People Partner
 
-## 10.8 Auditor
+Can access employee or feedback information only when specifically authorized
+(expressed through `feedback.view_private` and related grants).
 
-Can access read-only audit and compliance records.
+### Auditor
+
+Can access read-only audit and compliance records (`audit.view`); meaningful
+once full audit logging ships.
 
 ---
 

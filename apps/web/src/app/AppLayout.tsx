@@ -1,52 +1,158 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
-import { Toaster } from '@/components/shared';
+import { clearActiveDemoRole } from '@/app/auth/demoRole';
+import { DemoRoleSelector } from '@/app/DemoRoleSelector';
+import { NAV_ITEMS } from '@/app/navigation';
+import { BrandMark } from '@/components/brand/BrandLogo';
+import { CommandPalette, Toaster } from '@/components/shared';
+import { SparklesIcon } from '@/components/icons';
+import { AssistantPanel } from '@/features/assistant';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { useAssistantPanelStore } from '@/stores/assistantPanelStore';
+import { useCommandPaletteStore } from '@/stores/commandPaletteStore';
 import { cn } from '@/utils/cn';
 
-const NAV_ITEMS = [
-  { to: '/assistant', label: 'AI Assistant' },
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/projects', label: 'Projects' },
-  { to: '/people', label: 'People' },
-  { to: '/tickets', label: 'Tickets' },
-];
-
-/** App shell: dark green sidebar + top bar + scrollable content (MASTER section 26). */
+/**
+ * App shell: a compact icon rail (icon + label, no layout shift), a top bar
+ * with a ⌘K command-palette trigger, and scrollable content. The rail plus
+ * palette replace a traditional text sidebar for a faster, premium feel.
+ */
 export function AppLayout() {
+  const toggleAssistant = useAssistantPanelStore((state) => state.toggle);
+  const openPalette = useCommandPaletteStore((state) => state.open);
+  const location = useLocation();
+  const isAssistantPage = location.pathname.startsWith('/assistant');
+  const hasPermission = useHasPermission();
+  const navItems = NAV_ITEMS.filter(
+    (item) => !item.permission || hasPermission(item.permission),
+  );
+
+  const handleLogout = () => {
+    clearActiveDemoRole();
+    // Full navigation resets cache + session so the landing page loads clean.
+    window.location.assign('/welcome');
+  };
+
   return (
-    <div className='flex min-h-screen'>
-      <aside className='w-60 shrink-0 bg-primary-active text-primary-fg'>
-        <div className='px-5 py-5 text-lg font-semibold'>TACT AI</div>
-        <nav aria-label='Primary' className='flex flex-col gap-1 px-2'>
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  'rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-fg'
-                    : 'text-primary-fg/80 hover:bg-primary/40',
-                )
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+    <div className='flex h-screen overflow-hidden'>
+      <aside className='sticky top-0 flex h-screen w-20 shrink-0 flex-col items-center gap-1 bg-gradient-to-b from-primary-active to-[#0a3527] py-4 text-primary-fg'>
+        <NavLink
+          to='/dashboard'
+          aria-label='TACT AI home'
+          className='mb-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-fg/70'
+        >
+          <BrandMark className='h-9 w-9' />
+        </NavLink>
+        <nav
+          aria-label='Primary'
+          className='no-scrollbar flex flex-1 flex-col items-center gap-1 overflow-y-auto'
+        >
+          {navItems.map((item) => {
+            const NavIcon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                title={item.label}
+                className={({ isActive }) =>
+                  cn(
+                    'group flex w-16 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium leading-tight transition-colors',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-fg/70',
+                    isActive
+                      ? 'bg-primary/90 text-primary-fg shadow-sm'
+                      : 'text-primary-fg/70 hover:bg-primary/40 hover:text-primary-fg',
+                  )
+                }
+              >
+                <NavIcon className='h-5 w-5' aria-hidden />
+                <span className='text-center'>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
+        <button
+          type='button'
+          onClick={handleLogout}
+          title='Log out'
+          className='group mt-1 flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium leading-tight text-primary-fg/70 transition-colors hover:bg-primary/40 hover:text-primary-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-fg/70'
+        >
+          <LogoutIcon className='h-5 w-5' aria-hidden />
+          <span className='text-center'>Log out</span>
+        </button>
       </aside>
+
       <div className='flex min-w-0 flex-1 flex-col'>
-        <header className='flex h-14 items-center justify-end border-b border-border bg-surface px-6'>
-          <span className='text-sm text-fg-muted'>Demo Manager</span>
+        <header className='sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border bg-surface/95 px-6 backdrop-blur'>
+          <button
+            type='button'
+            onClick={openPalette}
+            className='group flex h-9 min-w-56 max-w-md flex-1 items-center gap-2 rounded-md border border-border bg-surface-muted/60 px-3 text-sm text-fg-muted transition-colors hover:border-primary/40 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover'
+            aria-label='Open command palette'
+          >
+            <svg
+              viewBox='0 0 24 24'
+              className='h-4 w-4 shrink-0'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='1.5'
+              aria-hidden
+            >
+              <circle cx='11' cy='11' r='7' />
+              <path d='m20 20-3.5-3.5' strokeLinecap='round' />
+            </svg>
+            <span className='flex-1 text-left'>Jump to…</span>
+            <kbd className='rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium'>
+              ⌘K
+            </kbd>
+          </button>
+
+          <div className='ml-auto flex items-center gap-3'>
+            {isAssistantPage ? null : (
+              <button
+                type='button'
+                onClick={toggleAssistant}
+                className='inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-fg-body transition-colors hover:border-primary/40 hover:bg-primary-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1'
+              >
+                <SparklesIcon className='h-4 w-4 text-primary' aria-hidden />
+                Ask assistant
+              </button>
+            )}
+            <DemoRoleSelector />
+          </div>
         </header>
-        <main className='flex-1 overflow-auto p-6'>
-          <div className='mx-auto max-w-6xl'>
+
+        <main className='no-scrollbar flex-1 overflow-auto p-6 md:p-8'>
+          <div
+            key={location.pathname}
+            className='animate-fade-in mx-auto max-w-6xl'
+          >
             <Outlet />
           </div>
         </main>
       </div>
+
+      <AssistantPanel />
+      <CommandPalette />
       <Toaster />
     </div>
+  );
+}
+
+function LogoutIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      className={className}
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      aria-hidden
+    >
+      <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
+      <path d='m16 17 5-5-5-5' />
+      <path d='M21 12H9' />
+    </svg>
   );
 }

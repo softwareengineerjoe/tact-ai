@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DEMO_ROLE_HEADER, getActiveDemoRole } from '@/app/auth/demoRole';
+
 const API_BASE = '/api/v1';
 
 export interface ApiError extends Error {
@@ -50,6 +52,12 @@ async function toApiError(response: Response): Promise<ApiError> {
   }
 }
 
+/** Demo-only header selecting the acting role (MASTER FR-001). */
+function demoRoleHeaders(): Record<string, string> {
+  const role = getActiveDemoRole();
+  return role ? { [DEMO_ROLE_HEADER]: role } : {};
+}
+
 export async function request<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -60,6 +68,7 @@ export async function request<T>(
     headers: {
       'Content-Type': 'application/json',
       'X-Correlation-Id': crypto.randomUUID(),
+      ...demoRoleHeaders(),
       ...init?.headers,
     },
   });
@@ -77,6 +86,7 @@ export async function requestVoid(
     headers: {
       'Content-Type': 'application/json',
       'X-Correlation-Id': crypto.randomUUID(),
+      ...demoRoleHeaders(),
       ...init?.headers,
     },
   });

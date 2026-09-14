@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import type { Employee } from '@/features/people/types';
 import { EmploymentStatusBadge } from './EmploymentStatusBadge';
 
@@ -30,6 +32,9 @@ export function PeopleTable({
             </th>
             <th scope='col' className='px-4 py-2.5'>
               Status
+            </th>
+            <th scope='col' className='px-4 py-2.5'>
+              <span className='sr-only'>Actions</span>
             </th>
           </tr>
         </thead>
@@ -78,6 +83,15 @@ export function PeopleTable({
                 </td>
                 <td className='px-4 py-2.5'>
                   <EmploymentStatusBadge status={employee.employment_status} />
+                </td>
+                <td className='px-4 py-2.5 text-right'>
+                  <Link
+                    to={`/people/${employee.id}`}
+                    onClick={(event) => event.stopPropagation()}
+                    className='text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover'
+                  >
+                    Dashboard
+                  </Link>
                 </td>
               </tr>
             );

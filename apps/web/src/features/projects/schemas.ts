@@ -46,3 +46,44 @@ export const CreateProjectSchema = z.object({
   business_objective: z.string().optional(),
   priority: ProjectPrioritySchema.default('medium'),
 });
+
+export const ProjectProgressSchema = z.object({
+  method: z.enum(['story_points', 'tickets']),
+  completed: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  percent: z.number().int().min(0).max(100),
+});
+
+export const ProjectHealthSchema = z.object({
+  status: z.enum(['green', 'amber', 'red']),
+  reasons: z.array(z.string()),
+});
+
+export const ProjectStaffingSchema = z.object({
+  required_headcount: z.number().int().nonnegative(),
+  filled_headcount: z.number().int().nonnegative(),
+  unfilled_roles: z.number().int().nonnegative(),
+});
+
+export const ProjectTicketCountsSchema = z.object({
+  total: z.number().int().nonnegative(),
+  open: z.number().int().nonnegative(),
+  blocked: z.number().int().nonnegative(),
+  overdue: z.number().int().nonnegative(),
+  done: z.number().int().nonnegative(),
+});
+
+export const ProjectOverviewSchema = z.object({
+  project_id: z.string().uuid(),
+  status: ProjectStatusSchema,
+  progress: ProjectProgressSchema,
+  health: ProjectHealthSchema,
+  staffing: ProjectStaffingSchema,
+  tickets: ProjectTicketCountsSchema,
+  generated_at: z.string().datetime(),
+});
+
+export const ProjectClosureSchema = z.object({
+  project: ProjectSchema,
+  released_allocations: z.number().int().nonnegative(),
+});

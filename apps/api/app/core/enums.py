@@ -119,3 +119,43 @@ class MessageRole(StrEnum):
 
     USER = "user"
     ASSISTANT = "assistant"
+
+
+class NotificationType(StrEnum):
+    """In-app notification categories (MASTER FR-018)."""
+
+    ASSIGNMENT_CREATED = "assignment_created"
+    ASSIGNMENT_CONFIRMED = "assignment_confirmed"
+    TICKET_ASSIGNED = "ticket_assigned"
+    TICKET_DUE_SOON = "ticket_due_soon"
+    TICKET_BLOCKED = "ticket_blocked"
+    REVIEW_REQUESTED = "review_requested"
+    FEEDBACK_SHARED = "feedback_shared"
+    CAPACITY_CONFLICT = "capacity_conflict"
+    ROLE_UNFILLED = "role_unfilled"
+    AI_ACTION_PENDING = "ai_action_pending"
+    INTEGRATION_SYNC_FAILED = "integration_sync_failed"
+
+
+class ImportKind(StrEnum):
+    """What an import job loads (MASTER FR-019, 16.2)."""
+
+    EMPLOYEES = "employees"
+
+
+class ImportStatus(StrEnum):
+    """Lifecycle of an import job."""
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ImportRowStatus(StrEnum):
+    """Outcome of a single imported row."""
+
+    CREATED = "created"
+    UPDATED = "updated"
+    SKIPPED = "skipped"
+    INVALID = "invalid"
