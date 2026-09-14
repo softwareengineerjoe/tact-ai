@@ -10,6 +10,8 @@ interface GuideMessage {
   role: 'user' | 'assistant';
   content: string;
   offersDemo?: boolean;
+  /** While true, the bubble shows a caret and hides the demo button. */
+  typing?: boolean;
 }
 
 interface LandingGuideProps {
@@ -39,19 +41,32 @@ export function LandingGuide({ onTryDemo, className }: LandingGuideProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<GuideMessage[]>([WELCOME]);
   const [value, setValue] = useState('');
+  // Tia "thinks" briefly, then types her reply out — so answers never feel
+  // instant or pre-scripted.
+  const [isThinking, setIsThinking] = useState(false);
 
   const panelId = useId();
   const titleId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const isBusy = isThinking || messages.some((message) => message.typing);
+
+  // Clear every scheduled timer (used on unmount and when replaying).
+  const clearTimers = () => {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+  };
+  useEffect(() => clearTimers, []);
 
   // Keep the latest message in view and focus the field when opening.
   useEffect(() => {
     if (!isOpen) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
     inputRef.current?.focus();
-  }, [isOpen, messages]);
+  }, [isOpen, messages, isThinking]);
 
   // Close on Escape and return focus to the launcher.
   useEffect(() => {
@@ -68,19 +83,76 @@ export function LandingGuide({ onTryDemo, className }: LandingGuideProps) {
 
   const ask = (question: string) => {
     const trimmed = question.trim();
-    if (trimmed === '') return;
+    if (trimmed === '' || isBusy) return;
+
     const reply = answerQuestion(trimmed);
+    const stamp = Date.now();
     setMessages((prev) => [
       ...prev,
-      { id: `u-${prev.length}`, role: 'user', content: trimmed },
-      {
-        id: `a-${prev.length}`,
-        role: 'assistant',
-        content: reply.answer,
-        offersDemo: reply.offersDemo,
-      },
+      { id: `u-${stamp}`, role: 'user', content: trimmed },
     ]);
     setValue('');
+
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    const assistantId = `a-${stamp}`;
+
+    // A pause that scales gently with answer length, plus a little jitter, so
+    // no two replies land at exactly the same beat.
+    const thinkMs = reduceMotion
+      ? 250
+      : 500 + Math.min(reply.answer.length * 5, 900) + Math.random() * 350;
+
+    setIsThinking(true);
+    timersRef.current.push(
+      setTimeout(() => {
+        setIsThinking(false);
+
+        if (reduceMotion) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: assistantId,
+              role: 'assistant',
+              content: reply.answer,
+              offersDemo: reply.offersDemo,
+            },
+          ]);
+          return;
+        }
+
+        // Mount the assistant bubble once, then reveal its text in place so it
+        // never remounts (and never blinks) when it finishes.
+        setMessages((prev) => [
+          ...prev,
+          { id: assistantId, role: 'assistant', content: '', typing: true },
+        ]);
+
+        let index = 0;
+        const type = () => {
+          index = Math.min(index + 3, reply.answer.length);
+          const done = index >= reply.answer.length;
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === assistantId
+                ? {
+                    ...message,
+                    content: reply.answer.slice(0, index),
+                    typing: !done,
+                    offersDemo: done ? reply.offersDemo : undefined,
+                  }
+                : message,
+            ),
+          );
+          if (!done) {
+            timersRef.current.push(setTimeout(type, 16));
+          }
+        };
+        type();
+      }, thinkMs),
+    );
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -135,8 +207,10 @@ export function LandingGuide({ onTryDemo, className }: LandingGuideProps) {
               />
             ))}
 
+            {isThinking ? <GuideTyping /> : null}
+
             {/* Starter prompts appear until the visitor asks something. */}
-            {messages.length === 1 ? (
+            {messages.length === 1 && !isBusy ? (
               <div className='space-y-1.5 pt-1'>
                 <p className='px-1 text-xs font-medium text-fg-muted'>
                   Try asking…
@@ -175,7 +249,7 @@ export function LandingGuide({ onTryDemo, className }: LandingGuideProps) {
             />
             <button
               type='submit'
-              disabled={value.trim() === ''}
+              disabled={value.trim() === '' || isBusy}
               aria-label='Send'
               className='flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-fg transition-colors hover:bg-primary-hover disabled:bg-surface-muted disabled:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
             >
@@ -200,6 +274,31 @@ export function LandingGuide({ onTryDemo, className }: LandingGuideProps) {
         <AssistantAvatar size={36} still className='shrink-0' />
         <span className='text-sm font-semibold text-fg-body'>Ask Tia</span>
       </button>
+    </div>
+  );
+}
+
+/** Tia's "thinking" row: mascot + three animated typing dots. */
+function GuideTyping() {
+  return (
+    <div
+      className='flex items-end gap-2'
+      role='status'
+      aria-label='Tia is typing'
+    >
+      <AssistantAvatar size={26} still className='mb-0.5 shrink-0' />
+      <div className='flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-border bg-surface px-3.5 py-3 shadow-xs'>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className='h-2 w-2 rounded-full bg-primary'
+            style={{
+              animation: 'tia-typing 1.2s ease-in-out infinite',
+              animationDelay: `${i * 0.15}s`,
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -230,7 +329,15 @@ function GuideBubble({
             : 'rounded-bl-sm border-border bg-surface text-fg-body',
         )}
       >
-        <p className='whitespace-pre-wrap leading-relaxed'>{message.content}</p>
+        <p className='whitespace-pre-wrap leading-relaxed'>
+          {message.content}
+          {message.typing ? (
+            <span
+              aria-hidden
+              className='ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-primary align-middle'
+            />
+          ) : null}
+        </p>
         {!isUser && message.offersDemo ? (
           <button
             type='button'

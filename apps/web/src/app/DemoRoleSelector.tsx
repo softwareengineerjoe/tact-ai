@@ -22,7 +22,7 @@ export function DemoRoleSelector() {
 
   return (
     <label className='flex items-center gap-2 text-sm text-fg-muted'>
-      <span>Demo role</span>
+      <span className='hidden sm:inline'>Demo role</span>
       <select
         value={active}
         onChange={handleChange}

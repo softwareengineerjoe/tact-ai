@@ -53,7 +53,7 @@ async function toApiError(response: Response): Promise<ApiError> {
 }
 
 /** Demo-only header selecting the acting role (MASTER FR-001). */
-function demoRoleHeaders(): Record<string, string> {
+export function demoRoleHeaders(): Record<string, string> {
   const role = getActiveDemoRole();
   return role ? { [DEMO_ROLE_HEADER]: role } : {};
 }

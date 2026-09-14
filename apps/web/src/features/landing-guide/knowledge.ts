@@ -132,6 +132,25 @@ export const GUIDE_ENTRIES: readonly GuideEntry[] = [
       'Access is controlled by role-based permissions enforced on the backend, organizations are isolated, and sensitive fields are protected. The demo uses synthetic data only. Protected personal characteristics and private feedback are never used in recommendation scoring.',
     offersDemo: true,
   },
+  {
+    id: 'creator',
+    question: 'Who created TACT AI?',
+    keywords: [
+      'who',
+      'made',
+      'built',
+      'created',
+      'creator',
+      'author',
+      'developer',
+      'developed',
+      'behind',
+      'softwareengineerjoe',
+    ],
+    answer:
+      'TACT AI was created by softwareengineerjoe. Want to see what it can do? Jump into the demo.',
+    offersDemo: true,
+  },
 ];
 
 const FALLBACK_ANSWER =

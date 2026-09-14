@@ -8,6 +8,7 @@ import {
 } from '@/components/icons';
 import { DEMO_ROLES, setActiveDemoRole } from '@/app/auth/demoRole';
 import { LandingGuide } from '@/features/landing-guide';
+import { requestTutorialStart } from '@/stores/tutorialStore';
 import type { ReactNode } from 'react';
 
 interface RolePitch {
@@ -57,6 +58,12 @@ export function LandingPage() {
     window.location.assign('/dashboard');
   };
 
+  // Entering via "Try the demo" launches the guided tour on arrival.
+  const startDemoWithTour = () => {
+    requestTutorialStart();
+    choose('project_manager');
+  };
+
   return (
     <main className='relative min-h-screen overflow-hidden bg-gradient-to-br from-primary-active via-[#0c4030] to-[#08301f] text-primary-fg'>
       {/* ambient depth */}
@@ -78,7 +85,7 @@ export function LandingPage() {
         className='animate-float pointer-events-none absolute -left-16 bottom-16 h-64 w-64 rounded-full bg-accent-gold/10 blur-3xl'
       />
 
-      <div className='relative mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10'>
+      <div className='relative mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-8 sm:px-6 sm:py-10'>
         <header className='animate-fade-in flex items-center justify-between'>
           <BrandLogo variant='light' />
           <span className='inline-flex items-center gap-1.5 rounded-full border border-primary-fg/20 bg-primary-fg/5 px-3 py-1 text-xs font-medium text-primary-fg/80'>
@@ -90,7 +97,7 @@ export function LandingPage() {
           </span>
         </header>
 
-        <section className='mx-auto mt-16 max-w-2xl text-center'>
+        <section className='mx-auto mt-10 max-w-2xl text-center sm:mt-16'>
           <p className='animate-rise-in text-xs font-semibold uppercase tracking-[0.2em] text-primary-fg/60'>
             Team Assembly · Coordination · Tracking
           </p>
@@ -110,7 +117,10 @@ export function LandingPage() {
           </p>
         </section>
 
-        <section aria-labelledby='choose-role' className='mt-14 flex-1'>
+        <section
+          aria-labelledby='choose-role'
+          className='mt-10 flex-1 sm:mt-14'
+        >
           <h2
             id='choose-role'
             className='animate-fade-in mb-4 text-center text-sm font-medium text-primary-fg/70'
@@ -170,7 +180,7 @@ export function LandingPage() {
       </div>
 
       {/* Public companion: answers general questions and leads to the demo. */}
-      <LandingGuide onTryDemo={() => choose('project_manager')} />
+      <LandingGuide onTryDemo={startDemoWithTour} />
     </main>
   );
 }

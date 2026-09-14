@@ -26,7 +26,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'animate-fade-in mb-6 flex items-start justify-between gap-4 border-b border-border/70 pb-5',
+        'animate-fade-in mb-6 flex flex-col gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-start sm:justify-between',
         className,
       )}
     >

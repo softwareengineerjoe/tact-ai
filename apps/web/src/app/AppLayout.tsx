@@ -7,6 +7,7 @@ import { BrandMark } from '@/components/brand/BrandLogo';
 import { CommandPalette, Toaster } from '@/components/shared';
 import { SparklesIcon } from '@/components/icons';
 import { AssistantPanel } from '@/features/assistant';
+import { TourLauncher, TourOverlay } from '@/features/tutorial';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { useAssistantPanelStore } from '@/stores/assistantPanelStore';
 import { useCommandPaletteStore } from '@/stores/commandPaletteStore';
@@ -45,6 +46,7 @@ export function AppLayout() {
         </NavLink>
         <nav
           aria-label='Primary'
+          data-tour='nav-rail'
           className='no-scrollbar flex flex-1 flex-col items-center gap-1 overflow-y-auto'
         >
           {navItems.map((item) => {
@@ -54,6 +56,7 @@ export function AppLayout() {
                 key={item.to}
                 to={item.to}
                 title={item.label}
+                data-tour={`nav:${item.to}`}
                 className={({ isActive }) =>
                   cn(
                     'group flex w-16 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium leading-tight transition-colors',
@@ -82,11 +85,12 @@ export function AppLayout() {
       </aside>
 
       <div className='flex min-w-0 flex-1 flex-col'>
-        <header className='sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border bg-surface/95 px-6 backdrop-blur'>
+        <header className='sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border bg-surface/95 px-3 backdrop-blur md:gap-3 md:px-6'>
           <button
             type='button'
             onClick={openPalette}
-            className='group flex h-9 min-w-56 max-w-md flex-1 items-center gap-2 rounded-md border border-border bg-surface-muted/60 px-3 text-sm text-fg-muted transition-colors hover:border-primary/40 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover'
+            data-tour='command-palette'
+            className='group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-surface-muted/60 px-3 text-sm text-fg-muted transition-colors hover:border-primary/40 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover sm:min-w-56 sm:max-w-md'
             aria-label='Open command palette'
           >
             <svg
@@ -100,28 +104,33 @@ export function AppLayout() {
               <circle cx='11' cy='11' r='7' />
               <path d='m20 20-3.5-3.5' strokeLinecap='round' />
             </svg>
-            <span className='flex-1 text-left'>Jump to…</span>
-            <kbd className='rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium'>
+            <span className='flex-1 truncate text-left'>Jump to…</span>
+            <kbd className='hidden rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium sm:inline-block'>
               ⌘K
             </kbd>
           </button>
 
-          <div className='ml-auto flex items-center gap-3'>
+          <div className='ml-auto flex shrink-0 items-center gap-2 md:gap-3'>
             {isAssistantPage ? null : (
               <button
                 type='button'
                 onClick={toggleAssistant}
-                className='inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-fg-body transition-colors hover:border-primary/40 hover:bg-primary-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1'
+                data-tour='assistant-button'
+                aria-label='Ask assistant'
+                className='inline-flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-sm font-medium text-fg-body transition-colors hover:border-primary/40 hover:bg-primary-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1 sm:px-3'
               >
                 <SparklesIcon className='h-4 w-4 text-primary' aria-hidden />
-                Ask assistant
+                <span className='hidden sm:inline'>Ask assistant</span>
               </button>
             )}
-            <DemoRoleSelector />
+            <TourLauncher />
+            <span data-tour='role-selector'>
+              <DemoRoleSelector />
+            </span>
           </div>
         </header>
 
-        <main className='no-scrollbar flex-1 overflow-auto p-6 md:p-8'>
+        <main className='no-scrollbar flex-1 overflow-auto p-4 sm:p-6 md:p-8'>
           <div
             key={location.pathname}
             className='animate-fade-in mx-auto max-w-6xl'
@@ -133,6 +142,7 @@ export function AppLayout() {
 
       <AssistantPanel />
       <CommandPalette />
+      <TourOverlay />
       <Toaster />
     </div>
   );

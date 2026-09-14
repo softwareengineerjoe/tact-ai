@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 import { ErrorState, LoadingState } from '@/components/shared';
 import { toast } from '@/components/shared';
+import { assistantService } from '@/services/assistantService';
 import { cn } from '@/utils/cn';
+import type { ChatMessage } from '../types';
 import { useAssistantSession } from '../api/useAssistantSession';
 import { useCreateSession } from '../api/useCreateSession';
-import { useSendMessage } from '../api/useSendMessage';
 import { AssistantAvatar } from '../components/AssistantAvatar';
 import { AssistantWelcome } from '../components/AssistantWelcome';
 import { ChatComposer } from '../components/ChatComposer';
@@ -17,16 +18,47 @@ interface AssistantContainerProps {
 }
 
 /**
+ * A locally-tracked turn. The assistant message keeps a stable id from the
+ * first token through the final payload, so its bubble updates in place (no
+ * remount, no re-run of the entrance animation) when streaming finishes.
+ */
+interface LocalTurn {
+  id: string;
+  user: ChatMessage;
+  assistant: ChatMessage | null;
+  isStreaming: boolean;
+}
+
+/** Build a client-side message shell (used for optimistic/streamed bubbles). */
+function makeMessage(role: ChatMessage['role'], content: string): ChatMessage {
+  return {
+    id: crypto.randomUUID(),
+    role,
+    content,
+    model_version: null,
+    reasoning_summary: null,
+    warnings: null,
+    suggested_next_action: null,
+    citations: [],
+    created_at: new Date().toISOString(),
+  };
+}
+
+/**
  * Owns the assistant conversation lifecycle: creates a session, renders the
- * message history with loading/empty/error states, and sends messages.
+ * message history with loading/empty/error states, and streams replies token by
+ * token over Server-Sent Events (MASTER FR-020).
  */
 export function AssistantContainer({ className }: AssistantContainerProps) {
   const createSession = useCreateSession();
   const sessionId = createSession.data?.id ?? '';
   const session = useAssistantSession(sessionId);
-  const sendMessage = useSendMessage();
   const startedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const [turns, setTurns] = useState<LocalTurn[]>([]);
+
+  const isStreaming = turns.some((turn) => turn.isStreaming);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -34,22 +66,73 @@ export function AssistantContainer({ className }: AssistantContainerProps) {
     createSession.mutate(undefined);
   }, [createSession]);
 
-  const messages = session.data?.messages ?? [];
+  // Abort any in-flight stream on unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Keep the newest message in view as the conversation grows.
+  const history = session.data?.messages ?? [];
+
+  // Keep the newest content in view as messages and stream tokens arrive.
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
       behavior: 'smooth',
     });
-  }, [messages.length, sendMessage.isPending]);
+  }, [history.length, turns]);
 
   const handleSend = (content: string) => {
-    if (sessionId === '') return;
-    sendMessage.mutate(
-      { sessionId, content },
-      { onError: (error) => toast.error(error.message) },
-    );
+    if (sessionId === '' || isStreaming) return;
+
+    const turnId = crypto.randomUUID();
+    const assistantId = crypto.randomUUID();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setTurns((prev) => [
+      ...prev,
+      {
+        id: turnId,
+        user: makeMessage('user', content),
+        assistant: null,
+        isStreaming: true,
+      },
+    ]);
+
+    void assistantService.streamMessage(sessionId, content, {
+      signal: controller.signal,
+      onToken: (text) =>
+        setTurns((prev) =>
+          prev.map((turn) =>
+            turn.id === turnId
+              ? {
+                  ...turn,
+                  assistant: {
+                    ...(turn.assistant ?? makeMessage('assistant', '')),
+                    id: assistantId,
+                    content: (turn.assistant?.content ?? '') + text,
+                  },
+                }
+              : turn,
+          ),
+        ),
+      onDone: (message) =>
+        // Keep the stable id so the bubble is reconciled in place — the final
+        // payload (citations, meta) appears without a remount or flicker.
+        setTurns((prev) =>
+          prev.map((turn) =>
+            turn.id === turnId
+              ? {
+                  ...turn,
+                  assistant: { ...message, id: assistantId },
+                  isStreaming: false,
+                }
+              : turn,
+          ),
+        ),
+      onError: (error) => {
+        setTurns((prev) => prev.filter((turn) => turn.id !== turnId));
+        toast.error(error.message);
+      },
+    });
   };
 
   if (createSession.isError) {
@@ -60,6 +143,8 @@ export function AssistantContainer({ className }: AssistantContainerProps) {
       />
     );
   }
+
+  const showWelcome = history.length === 0 && turns.length === 0;
 
   return (
     <div
@@ -81,18 +166,33 @@ export function AssistantContainer({ className }: AssistantContainerProps) {
           />
         ) : session.isError ? (
           <ErrorState error={session.error} onRetry={session.refetch} />
-        ) : messages.length === 0 ? (
+        ) : showWelcome ? (
           <AssistantWelcome onPick={handleSend} />
         ) : (
-          messages.map((message) => (
-            <ChatMessageBubble key={message.id} message={message} />
-          ))
-        )}
+          <>
+            {history.map((message) => (
+              <ChatMessageBubble key={message.id} message={message} />
+            ))}
 
-        {sendMessage.isPending ? <ThinkingIndicator /> : null}
+            {turns.map((turn) => (
+              <Fragment key={turn.id}>
+                <ChatMessageBubble message={turn.user} />
+                {turn.assistant === null ? (
+                  <ThinkingIndicator />
+                ) : (
+                  <ChatMessageBubble
+                    key={turn.assistant.id}
+                    message={turn.assistant}
+                    isStreaming={turn.isStreaming}
+                  />
+                )}
+              </Fragment>
+            ))}
+          </>
+        )}
       </div>
 
-      <ChatComposer onSend={handleSend} isSending={sendMessage.isPending} />
+      <ChatComposer onSend={handleSend} isSending={isStreaming} />
     </div>
   );
 }

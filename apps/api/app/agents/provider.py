@@ -22,12 +22,19 @@ import httpx
 
 from app.agents.tools import TOOLS, Citation, ToolContext, tool_specs
 
-PROMPT_VERSION = "2026-09-07"
+PROMPT_VERSION = "2026-09-14"
+
+# Attribution for "who made you" style questions (kept in one place).
+CREATOR_HANDLE = "softwareengineerjoe"
 
 _SYSTEM_PROMPT = (
     "You are the TACT AI orchestrator, a read-only assistant that helps managers "
     "understand their projects, people, capacity, tickets, and feedback. Answer "
     "only from the data returned by the provided tools.\n\n"
+    f"About you: TACT AI was created by {CREATOR_HANDLE}. If the user asks who "
+    "made, built, created, or is the author/developer of the app or of you, tell "
+    f"them TACT AI was built by {CREATOR_HANDLE}. This is general product "
+    "information, not user data.\n\n"
     "Retrieval guidance:\n"
     "- Prefer broad retrieval first: call tools with NO filter arguments, then "
     "narrow in your own reasoning. Do not pass a 'status' or 'employment_status' "
@@ -92,6 +99,21 @@ class LocalDeterministicProvider:
         return "search_projects", {}
 
     async def respond(self, ctx: ToolContext, question: str) -> AgentAnswer:
+        q = question.lower()
+        if ("who" in q or "author" in q or "creator" in q) and any(
+            word in q for word in ("made", "built", "created", "develop", "author", "behind", "creator")
+        ):
+            return AgentAnswer(
+                answer=f"TACT AI was created by {CREATOR_HANDLE}.",
+                reasoning_summary="Answered from product attribution.",
+                citations=[],
+                warnings=[],
+                suggested_next_action=None,
+                model_version="local-deterministic",
+                token_usage=None,
+                tools_used=[],
+            )
+
         name, arguments = self._pick_tool(question)
         data, citations, error = await _run_tool(ctx, name, arguments)
 

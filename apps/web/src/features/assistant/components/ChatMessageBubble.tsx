@@ -4,10 +4,15 @@ import { AssistantAvatar } from './AssistantAvatar';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
+  /** While true, show a blinking caret and hide the (not-yet-final) metadata. */
+  isStreaming?: boolean;
 }
 
 /** Presentational chat bubble: user on the right (green wash), assistant on white with the Tia mascot. */
-export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({
+  message,
+  isStreaming = false,
+}: ChatMessageBubbleProps) {
   const isUser = message.role === 'user';
   return (
     <div
@@ -28,9 +33,17 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             : 'rounded-bl-sm border-border bg-surface text-fg-body',
         )}
       >
-        <p className='whitespace-pre-wrap leading-relaxed'>{message.content}</p>
+        <p className='whitespace-pre-wrap leading-relaxed'>
+          {message.content}
+          {isStreaming ? (
+            <span
+              aria-hidden
+              className='ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-primary align-middle'
+            />
+          ) : null}
+        </p>
 
-        {message.role === 'assistant' ? (
+        {message.role === 'assistant' && !isStreaming ? (
           <AssistantMeta message={message} />
         ) : null}
       </div>
@@ -38,7 +51,7 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   );
 }
 
-function AssistantMeta({ message }: ChatMessageBubbleProps) {
+function AssistantMeta({ message }: { message: ChatMessage }) {
   const hasCitations = message.citations.length > 0;
   const hasWarnings = (message.warnings?.length ?? 0) > 0;
 
