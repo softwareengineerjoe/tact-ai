@@ -9,7 +9,11 @@ export function ProjectSetupPage() {
   if (!projectId) {
     return (
       <main aria-labelledby='project-setup-title'>
-        <PageHeader id='project-setup-title' title='Project Setup' />
+        <PageHeader
+          id='project-setup-title'
+          title='Project Setup'
+          backTo={{ to: '/projects', label: 'Back to Projects' }}
+        />
         <p className='text-sm text-fg-muted'>No project selected.</p>
       </main>
     );
@@ -21,6 +25,7 @@ export function ProjectSetupPage() {
         id='project-setup-title'
         title='Project Setup'
         description='Set the schedule and define the roles this project needs.'
+        backTo={{ to: `/projects/${projectId}`, label: 'Back to Project' }}
       />
       <ProjectSetupContainer projectId={projectId} />
     </main>

@@ -8,7 +8,15 @@ export function ProjectFeedbackPage() {
 
   return (
     <main aria-labelledby='feedback-title'>
-      <PageHeader id='feedback-title' title='Feedback' />
+      <PageHeader
+        id='feedback-title'
+        title='Feedback'
+        backTo={
+          projectId
+            ? { to: `/projects/${projectId}`, label: 'Back to Project' }
+            : { to: '/projects', label: 'Back to Projects' }
+        }
+      />
       <ProjectFeedbackContainer projectId={projectId ?? ''} />
     </main>
   );

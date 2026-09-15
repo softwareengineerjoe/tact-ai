@@ -12,6 +12,7 @@ export function ProjectOverviewPage() {
         id='project-overview-title'
         title='Project Overview'
         description='Progress, health, staffing, and tickets at a glance.'
+        backTo={{ to: '/projects', label: 'Back to Projects' }}
       />
       {projectId ? (
         <ProjectOverviewContainer projectId={projectId} />

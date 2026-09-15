@@ -31,6 +31,15 @@ function Icon({ children, className, title, ...props }: IconProps) {
   );
 }
 
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d='M19 12H5' />
+      <path d='m12 19-7-7 7-7' />
+    </Icon>
+  );
+}
+
 export function SparklesIcon(props: IconProps) {
   return (
     <Icon {...props}>

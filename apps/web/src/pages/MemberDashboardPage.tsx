@@ -12,6 +12,7 @@ export function MemberDashboardPage() {
         id='member-dashboard-title'
         title='Team Member Dashboard'
         description='Assigned work, allocation, deadlines, and shared feedback.'
+        backTo={{ to: '/people', label: 'Back to People' }}
       />
       {employeeId ? (
         <MemberDashboardContainer employeeId={employeeId} />

@@ -8,6 +8,7 @@ export function CreateProjectPage() {
         id='new-project-title'
         title='New Project'
         description='Name the project and set its priority. You will define dates and roles next.'
+        backTo={{ to: '/projects', label: 'Back to Projects' }}
       />
       <CreateProjectContainer />
     </main>

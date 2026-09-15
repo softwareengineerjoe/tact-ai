@@ -12,6 +12,11 @@ export function ProjectReportPage() {
         id='project-report-title'
         title='Weekly Status Report'
         description='A deterministic snapshot of progress, health, risks, and highlights.'
+        backTo={
+          projectId
+            ? { to: `/projects/${projectId}`, label: 'Back to Project' }
+            : { to: '/projects', label: 'Back to Projects' }
+        }
       />
       {projectId ? (
         <WeeklyStatusReportContainer projectId={projectId} />

@@ -9,7 +9,11 @@ export function TeamBuilderPage() {
   if (!projectId) {
     return (
       <main aria-labelledby='team-builder-title'>
-        <PageHeader id='team-builder-title' title='Team Builder' />
+        <PageHeader
+          id='team-builder-title'
+          title='Team Builder'
+          backTo={{ to: '/projects', label: 'Back to Projects' }}
+        />
         <p className='text-sm text-fg-muted'>No project selected.</p>
       </main>
     );
@@ -17,7 +21,11 @@ export function TeamBuilderPage() {
 
   return (
     <main aria-labelledby='team-builder-title'>
-      <PageHeader id='team-builder-title' title='Team Builder' />
+      <PageHeader
+        id='team-builder-title'
+        title='Team Builder'
+        backTo={{ to: `/projects/${projectId}`, label: 'Back to Project' }}
+      />
       <TeamBuilderContainer projectId={projectId} />
     </main>
   );
