@@ -76,7 +76,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: '/admin/roles',
     label: 'Roles',
     icon: ShieldIcon,
-    permission: 'roles.manage',
     hint: 'Access model reference',
   },
   {

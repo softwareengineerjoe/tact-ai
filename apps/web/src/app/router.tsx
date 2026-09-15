@@ -129,14 +129,7 @@ export const router = createBrowserRouter([
       },
       { path: '/notifications', element: <NotificationsPage /> },
       { path: '/architecture', element: <ArchitecturePage /> },
-      {
-        path: '/admin/roles',
-        element: (
-          <RequirePermission permission='roles.manage'>
-            <RolesReferencePage />
-          </RequirePermission>
-        ),
-      },
+      { path: '/admin/roles', element: <RolesReferencePage /> },
       {
         path: '/imports',
         element: (
