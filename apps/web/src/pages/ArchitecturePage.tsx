@@ -153,6 +153,12 @@ const DEPLOYMENT: readonly DeploymentRow[] = [
     detail:
       'Container Registry for images; Log Analytics workspace for diagnostics.',
   },
+  {
+    layer: 'CI/CD',
+    hosting: 'GitHub Actions',
+    detail:
+      'Push to main auto-deploys: backend via ACR build + Container App revision, frontend to SWA. Azure sign-in uses OIDC (a managed identity), so no client secret is stored.',
+  },
 ];
 
 /** A single box in the diagram. */
@@ -284,12 +290,16 @@ export function ArchitecturePage() {
           How it’s deployed today
         </h2>
         <p className='mt-1 text-sm text-fg-muted'>
-          The current Phase&nbsp;1 dev environment runs on Azure, provisioned by
-          a CLI-first script (
+          The current Phase&nbsp;1 dev environment runs on Azure, first
+          provisioned by a CLI-first script (
           <code className='rounded bg-surface-muted px-1 py-0.5 text-xs'>
             scripts/deploy-azure.ps1
           </code>
-          ). Everything lives in one resource group.
+          ) and now redeployed automatically by GitHub Actions on every push to{' '}
+          <code className='rounded bg-surface-muted px-1 py-0.5 text-xs'>
+            main
+          </code>
+          . Everything lives in one resource group.
         </p>
         <div className='mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
           {DEPLOYMENT.map((row) => (
@@ -308,9 +318,9 @@ export function ArchitecturePage() {
           ))}
         </div>
         <p className='mt-3 text-xs text-fg-muted'>
-          Secrets are passed as Container App secrets, never committed. Bicep
-          infrastructure-as-code and a CI/CD pipeline are planned for later
-          phases.
+          Secrets are passed as Container App secrets, never committed. A GitHub
+          Actions pipeline handles deploys today; Bicep infrastructure-as-code is
+          planned for later phases.
         </p>
       </section>
     </main>
