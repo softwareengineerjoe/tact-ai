@@ -35,7 +35,7 @@ export function TourLauncher() {
       data-tour='tour-launcher'
       onClick={() => start(steps.length)}
       disabled={isActive}
-      className='inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-fg shadow-sm transition-colors hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50 sm:px-3.5'
+      className='inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-fg shadow-sm transition-colors hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50 sm:px-3.5'
     >
       <CompassIcon className='h-4 w-4 text-primary-fg' aria-hidden />
       <span className='hidden sm:inline'>Take a tour</span>

@@ -21,7 +21,13 @@ export function SessionProvider({ children }: SessionProviderProps) {
   });
 
   if (isPending) {
-    return <LoadingState label='Loading your session' variant='block' />;
+    return (
+      <LoadingState
+        label='Loading your session'
+        variant='block'
+        className='min-h-screen'
+      />
+    );
   }
   if (isError) {
     return <ErrorState error={error} onRetry={() => void refetch()} />;

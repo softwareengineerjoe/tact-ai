@@ -319,8 +319,8 @@ export function ArchitecturePage() {
         </div>
         <p className='mt-3 text-xs text-fg-muted'>
           Secrets are passed as Container App secrets, never committed. A GitHub
-          Actions pipeline handles deploys today; Bicep infrastructure-as-code is
-          planned for later phases.
+          Actions pipeline handles deploys today; Bicep infrastructure-as-code
+          is planned for later phases.
         </p>
       </section>
     </main>

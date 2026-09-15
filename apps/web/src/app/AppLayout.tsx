@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { clearActiveDemoRole } from '@/app/auth/demoRole';
@@ -17,6 +18,9 @@ import { cn } from '@/utils/cn';
  * App shell: a compact icon rail (icon + label, no layout shift), a top bar
  * with a ⌘K command-palette trigger, and scrollable content. The rail plus
  * palette replace a traditional text sidebar for a faster, premium feel.
+ *
+ * On small screens the rail collapses into an off-canvas drawer toggled from
+ * the header, so navigation never competes with content for space.
  */
 export function AppLayout() {
   const toggleAssistant = useAssistantPanelStore((state) => state.toggle);
@@ -28,6 +32,23 @@ export function AppLayout() {
     (item) => !item.permission || hasPermission(item.permission),
   );
 
+  const [isNavOpen, setIsNavOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setIsNavOpen(false);
+  }, [location.pathname]);
+
+  // Lock body scroll and allow ESC to close while the drawer is open.
+  useEffect(() => {
+    if (!isNavOpen) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsNavOpen(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isNavOpen]);
+
   const handleLogout = () => {
     clearActiveDemoRole();
     // Full navigation resets cache + session so the landing page loads clean.
@@ -36,7 +57,22 @@ export function AppLayout() {
 
   return (
     <div className='flex h-screen overflow-hidden'>
-      <aside className='sticky top-0 flex h-screen w-20 shrink-0 flex-col items-center gap-1 bg-gradient-to-b from-primary-active to-[#0a3527] py-4 text-primary-fg'>
+      {/* Mobile backdrop: click to dismiss the drawer. */}
+      {isNavOpen ? (
+        <button
+          type='button'
+          aria-label='Close navigation'
+          onClick={() => setIsNavOpen(false)}
+          className='animate-fade-in fixed inset-0 z-30 bg-fg/40 backdrop-blur-sm md:hidden'
+        />
+      ) : null}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex h-screen w-20 shrink-0 flex-col items-center gap-1 bg-gradient-to-b from-primary-active to-[#0a3527] py-4 text-primary-fg transition-transform duration-200 ease-out',
+          'md:sticky md:top-0 md:z-auto md:translate-x-0',
+          isNavOpen ? 'translate-x-0 shadow-lg' : '-translate-x-full',
+        )}
+      >
         <NavLink
           to='/'
           aria-label='TACT AI home'
@@ -85,7 +121,17 @@ export function AppLayout() {
       </aside>
 
       <div className='flex min-w-0 flex-1 flex-col'>
-        <header className='sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border bg-surface/95 px-3 backdrop-blur md:gap-3 md:px-6'>
+        <header className='sticky top-0 z-10 flex h-16 items-center gap-1.5 border-b border-border bg-surface/95 px-3 backdrop-blur sm:gap-2 md:gap-3 md:px-6'>
+          <button
+            type='button'
+            onClick={() => setIsNavOpen(true)}
+            aria-label='Open navigation'
+            aria-expanded={isNavOpen}
+            className='inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-fg-body transition-colors hover:border-primary/40 hover:bg-primary-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover md:hidden'
+          >
+            <MenuIcon className='h-5 w-5' aria-hidden />
+          </button>
+
           <div className='flex min-w-0 flex-1 items-center'>
             <button
               type='button'
@@ -112,24 +158,24 @@ export function AppLayout() {
             </button>
           </div>
 
-          <div className='flex shrink-0 justify-center'>
+          <div className='hidden shrink-0 justify-center sm:flex'>
             <TourLauncher />
           </div>
 
-          <div className='flex flex-1 items-center justify-end gap-2 md:gap-3'>
+          <div className='flex shrink-0 items-center justify-end gap-1.5 sm:gap-2 md:gap-3'>
             {isAssistantPage ? null : (
               <button
                 type='button'
                 onClick={toggleAssistant}
                 data-tour='assistant-button'
                 aria-label='Ask assistant'
-                className='inline-flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-sm font-medium text-fg-body transition-colors hover:border-primary/40 hover:bg-primary-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1 sm:px-3'
+                className='inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-border px-2 text-sm font-medium text-fg-body transition-colors hover:border-primary/40 hover:bg-primary-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1 sm:px-3'
               >
                 <SparklesIcon className='h-4 w-4 text-primary' aria-hidden />
                 <span className='hidden sm:inline'>Ask assistant</span>
               </button>
             )}
-            <span data-tour='role-selector'>
+            <span data-tour='role-selector' className='shrink-0'>
               <DemoRoleSelector />
             </span>
           </div>
@@ -150,6 +196,23 @@ export function AppLayout() {
       <TourOverlay />
       <Toaster />
     </div>
+  );
+}
+
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      className={className}
+      fill='none'
+      stroke='currentColor'
+      strokeWidth='1.5'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      aria-hidden
+    >
+      <path d='M3 6h18M3 12h18M3 18h18' />
+    </svg>
   );
 }
 

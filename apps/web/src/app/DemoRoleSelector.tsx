@@ -28,7 +28,8 @@ export function DemoRoleSelector() {
       <select
         value={active}
         onChange={handleChange}
-        className='rounded-md border border-border bg-surface px-2 py-1 text-sm font-medium text-fg-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1'
+        aria-label='Demo role'
+        className='h-9 max-w-[8.5rem] truncate rounded-md border border-border bg-surface px-2 text-sm font-medium text-fg-body focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-1 sm:max-w-none'
       >
         {DEMO_ROLES.map((role) => (
           <option key={role.key} value={role.key}>
