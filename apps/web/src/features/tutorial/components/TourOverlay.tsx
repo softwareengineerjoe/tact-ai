@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useTutorialStore } from '@/stores/tutorialStore';
@@ -29,6 +29,7 @@ export function TourOverlay() {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [cardHeight, setCardHeight] = useState(300);
 
   // Navigate to the step's route so the feature is visible while explained.
   useEffect(() => {
@@ -82,13 +83,23 @@ export function TourOverlay() {
     return () => window.removeEventListener('keydown', onKey);
   }, [isActive, stepIndex, next, prev, stop]);
 
+  // Measure the card so it can be positioned fully on-screen (its height varies
+  // with body length). Re-measures whenever the step or spotlight changes.
+  useLayoutEffect(() => {
+    if (!isActive) return;
+    const height = cardRef.current?.offsetHeight;
+    if (height && height !== cardHeight) setCardHeight(height);
+  }, [isActive, stepIndex, rect, cardHeight]);
+
   if (!isActive || !step) return null;
 
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
   const placement: StepPlacement = step.placement ?? 'auto';
   const useCenter = placement === 'center' || rect === null;
-  const cardStyle = useCenter ? undefined : positionCard(rect, placement);
+  const cardStyle = useCenter
+    ? undefined
+    : positionCard(rect, placement, cardHeight);
   const pad = 6;
 
   return (
@@ -190,17 +201,20 @@ export function TourOverlay() {
   );
 }
 
-/** Position the card next to the spotlight, clamped inside the viewport. */
+/** Position the card next to the spotlight, clamped fully inside the viewport. */
 function positionCard(
   rect: DOMRect,
   placement: StepPlacement,
+  cardHeight: number,
 ): React.CSSProperties {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  const height = Math.min(cardHeight, vh - CARD_MARGIN * 2);
+
   const side =
     placement === 'right' || placement === 'bottom'
       ? placement
-      : rect.left < 160
+      : rect.left < 360
         ? 'right'
         : 'bottom';
 
@@ -214,8 +228,15 @@ function positionCard(
     top = rect.bottom + CARD_MARGIN;
   }
 
-  // Clamp within the viewport with a small margin.
+  // If the card would overflow the bottom, place it above the target instead so
+  // its actions (Back / Next) stay on-screen. Fall back to a clamped position.
+  if (top + height > vh - CARD_MARGIN) {
+    const aboveTop = rect.top - height - CARD_MARGIN;
+    top = aboveTop >= CARD_MARGIN ? aboveTop : vh - height - CARD_MARGIN;
+  }
+
+  // Final clamp within the viewport with a small margin.
   left = Math.min(Math.max(CARD_MARGIN, left), vw - CARD_WIDTH - CARD_MARGIN);
-  top = Math.min(Math.max(CARD_MARGIN, top), vh - 240);
+  top = Math.min(Math.max(CARD_MARGIN, top), vh - height - CARD_MARGIN);
   return { left, top };
 }

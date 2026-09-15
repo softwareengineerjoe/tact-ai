@@ -149,7 +149,7 @@ export function AssistantContainer({ className }: AssistantContainerProps) {
   return (
     <div
       className={cn(
-        'flex flex-col gap-4',
+        'flex flex-col gap-3',
         className ?? 'h-[calc(100vh-16rem)]',
       )}
     >

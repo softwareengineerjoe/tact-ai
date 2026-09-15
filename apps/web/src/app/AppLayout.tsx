@@ -38,7 +38,7 @@ export function AppLayout() {
     <div className='flex h-screen overflow-hidden'>
       <aside className='sticky top-0 flex h-screen w-20 shrink-0 flex-col items-center gap-1 bg-gradient-to-b from-primary-active to-[#0a3527] py-4 text-primary-fg'>
         <NavLink
-          to='/dashboard'
+          to='/'
           aria-label='TACT AI home'
           className='mb-3 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-fg/70'
         >
@@ -86,31 +86,37 @@ export function AppLayout() {
 
       <div className='flex min-w-0 flex-1 flex-col'>
         <header className='sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border bg-surface/95 px-3 backdrop-blur md:gap-3 md:px-6'>
-          <button
-            type='button'
-            onClick={openPalette}
-            data-tour='command-palette'
-            className='group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-surface-muted/60 px-3 text-sm text-fg-muted transition-colors hover:border-primary/40 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover sm:min-w-56 sm:max-w-md'
-            aria-label='Open command palette'
-          >
-            <svg
-              viewBox='0 0 24 24'
-              className='h-4 w-4 shrink-0'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='1.5'
-              aria-hidden
+          <div className='flex min-w-0 flex-1 items-center'>
+            <button
+              type='button'
+              onClick={openPalette}
+              data-tour='command-palette'
+              className='group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-surface-muted/60 px-3 text-sm text-fg-muted transition-colors hover:border-primary/40 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover sm:min-w-56 sm:max-w-md'
+              aria-label='Open command palette'
             >
-              <circle cx='11' cy='11' r='7' />
-              <path d='m20 20-3.5-3.5' strokeLinecap='round' />
-            </svg>
-            <span className='flex-1 truncate text-left'>Jump to…</span>
-            <kbd className='hidden rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium sm:inline-block'>
-              ⌘K
-            </kbd>
-          </button>
+              <svg
+                viewBox='0 0 24 24'
+                className='h-4 w-4 shrink-0'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='1.5'
+                aria-hidden
+              >
+                <circle cx='11' cy='11' r='7' />
+                <path d='m20 20-3.5-3.5' strokeLinecap='round' />
+              </svg>
+              <span className='flex-1 truncate text-left'>Jump to…</span>
+              <kbd className='hidden rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium sm:inline-block'>
+                ⌘K
+              </kbd>
+            </button>
+          </div>
 
-          <div className='ml-auto flex shrink-0 items-center gap-2 md:gap-3'>
+          <div className='flex shrink-0 justify-center'>
+            <TourLauncher />
+          </div>
+
+          <div className='flex flex-1 items-center justify-end gap-2 md:gap-3'>
             {isAssistantPage ? null : (
               <button
                 type='button'
@@ -123,7 +129,6 @@ export function AppLayout() {
                 <span className='hidden sm:inline'>Ask assistant</span>
               </button>
             )}
-            <TourLauncher />
             <span data-tour='role-selector'>
               <DemoRoleSelector />
             </span>

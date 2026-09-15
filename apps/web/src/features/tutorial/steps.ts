@@ -32,7 +32,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: 'sidebar',
     title: 'Your navigation rail',
     body: 'Everything lives here on the left. The icons only show what your current role is allowed to see — permissions are enforced by the backend, so the menu adapts to who you are.',
-    route: '/dashboard',
+    route: '/notifications',
     target: 'nav-rail',
     placement: 'right',
   },
@@ -43,6 +43,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     route: '/dashboard',
     target: 'nav:/dashboard',
     placement: 'right',
+    permission: 'reports.view',
   },
   {
     id: 'assistant',
@@ -57,6 +58,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: 'assistant-panel',
     title: 'The assistant follows you',
     body: 'Ask Tia from any screen using this button — a side panel slides in so you never lose your place while you work.',
+    route: '/notifications',
     target: 'assistant-button',
     placement: 'bottom',
     permission: 'assistant.use',
@@ -164,6 +166,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     route: '/admin/roles',
     target: 'nav:/admin/roles',
     placement: 'right',
+    permission: 'roles.manage',
   },
   {
     id: 'role-selector',
@@ -179,3 +182,48 @@ export const TOUR_STEPS: readonly TourStep[] = [
     placement: 'center',
   },
 ];
+
+/**
+ * Per-role framing for the tour's welcome step. Each entry is a short summary of
+ * what that role can actually do, so the visitor immediately understands the
+ * persona they're exploring. Keyed by the demo role key in demoRole.ts; falls
+ * back to `default` for any unknown role.
+ */
+export const ROLE_TOUR_INTROS: Record<string, string> = {
+  organization_admin:
+    'you have the widest access: manage the organization, users, roles, and integrations, and oversee every project, person, ticket, and report. This tour walks the full end-to-end workflow — notice this is the only role that sees everything.',
+  resource_manager:
+    'you own the people side: maintain the employee directory, skills, and availability, then staff projects and resolve capacity conflicts. You build and approve teams and import people — but you won’t manage the ticket board or edit project scope. Watch how the tour focuses on discovery, capacity, and staffing.',
+  project_manager:
+    'you run projects end to end: define role requirements, build and approve the team, assign and track tickets, record feedback, and generate reports. Unlike a Resource Manager, you own the ticket board and reporting — but you don’t bulk-import people. The tour follows that project-owner journey.',
+  executive_viewer:
+    'you get a read-only overview: project health, capacity summaries, staffing progress, and reports across the portfolio. You can’t create projects, staff teams, or manage tickets — so this tour is short and focused on the dashboards and insights you can explore.',
+  team_member:
+    'you focus on your own work: your assigned projects and tickets, your availability, and the feedback shared with you. You won’t see staffing, the people directory, or private feedback — so this tour highlights just your workspace and the AI assistant.',
+  default:
+    "here's how TACT AI helps you build and run a project team end to end — the tour only shows the features your role can actually use.",
+};
+
+/**
+ * Build the role-aware welcome step. It opens with "As a {role}, ..." so the
+ * visitor always knows which persona they're currently exploring.
+ */
+export function buildWelcomeStep(roleKey: string | null, roleLabel: string): TourStep {
+  const summary = ROLE_TOUR_INTROS[roleKey ?? 'default'] ?? ROLE_TOUR_INTROS.default;
+  return {
+    id: 'welcome',
+    title: `Welcome, ${roleLabel} 👋`,
+    body: `As a ${roleLabel}, ${summary} Use Next and Back to move through it, or Skip anytime.`,
+    placement: 'center',
+  };
+}
+
+/** Build the role-aware closing step, reminding the visitor of their persona. */
+export function buildFinishStep(roleLabel: string): TourStep {
+  return {
+    id: 'finish',
+    title: 'You’re ready 🎉',
+    body: `That’s the workflow available to you as a ${roleLabel}. Explore freely — switch personas anytime with the role selector, or relaunch this tour from “Take a tour” in the top bar.`,
+    placement: 'center',
+  };
+}

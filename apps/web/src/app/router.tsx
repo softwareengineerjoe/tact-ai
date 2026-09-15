@@ -1,8 +1,9 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 
-import { getActiveDemoRole } from '@/app/auth/demoRole';
 import { RequirePermission } from '@/app/guards/RequirePermission';
 import { AppLayout } from '@/app/AppLayout';
+import { DefaultLanding } from '@/app/DefaultLanding';
+import { ArchitecturePage } from '@/pages/ArchitecturePage';
 import { AssistantPage } from '@/pages/AssistantPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { MemberDashboardPage } from '@/pages/MemberDashboardPage';
@@ -28,12 +29,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: (
-          <Navigate
-            to={getActiveDemoRole() ? '/dashboard' : '/welcome'}
-            replace
-          />
-        ),
+        element: <DefaultLanding />,
       },
       {
         path: '/assistant',
@@ -43,7 +39,14 @@ export const router = createBrowserRouter([
           </RequirePermission>
         ),
       },
-      { path: '/dashboard', element: <DashboardPage /> },
+      {
+        path: '/dashboard',
+        element: (
+          <RequirePermission permission='reports.view'>
+            <DashboardPage />
+          </RequirePermission>
+        ),
+      },
       {
         path: '/projects',
         element: (
@@ -125,7 +128,15 @@ export const router = createBrowserRouter([
         ),
       },
       { path: '/notifications', element: <NotificationsPage /> },
-      { path: '/admin/roles', element: <RolesReferencePage /> },
+      { path: '/architecture', element: <ArchitecturePage /> },
+      {
+        path: '/admin/roles',
+        element: (
+          <RequirePermission permission='roles.manage'>
+            <RolesReferencePage />
+          </RequirePermission>
+        ),
+      },
       {
         path: '/imports',
         element: (

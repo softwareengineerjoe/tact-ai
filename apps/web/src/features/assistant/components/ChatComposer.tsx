@@ -21,7 +21,7 @@ export function ChatComposer({ onSend, isSending = false }: ChatComposerProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className='group relative rounded-2xl border border-border bg-surface p-2 shadow-sm transition-shadow focus-within:border-primary/40 focus-within:shadow-md'
+      className='group relative rounded-xl border border-border bg-surface p-1.5 shadow-sm transition-shadow focus-within:border-primary/40 focus-within:shadow-md'
     >
       <label htmlFor='assistant-input' className='sr-only'>
         Ask about projects, people, or tickets
@@ -36,13 +36,13 @@ export function ChatComposer({ onSend, isSending = false }: ChatComposerProps) {
           }}
           rows={1}
           placeholder='Ask about projects, people, or tickets…'
-          className='max-h-40 min-h-[2.75rem] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-fg-body placeholder:text-fg-muted focus:outline-none'
+          className='max-h-40 min-h-[2.25rem] flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-fg-body placeholder:text-fg-muted focus:outline-none'
         />
         <button
           type='submit'
           disabled={!canSend}
           aria-label='Send message'
-          className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-fg shadow-sm transition-all hover:bg-primary-hover disabled:bg-surface-muted disabled:text-fg-muted disabled:shadow-none enabled:hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
+          className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-fg shadow-sm transition-all hover:bg-primary-hover disabled:bg-surface-muted disabled:text-fg-muted disabled:shadow-none enabled:hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-hover focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
         >
           {isSending ? (
             <span className='h-4 w-4 animate-spin rounded-full border-2 border-primary-fg/40 border-t-primary-fg' />
@@ -51,7 +51,7 @@ export function ChatComposer({ onSend, isSending = false }: ChatComposerProps) {
           )}
         </button>
       </div>
-      <p className='px-2 pb-1 pt-0.5 text-xs text-fg-muted'>
+      <p className='px-2 pb-1 pt-0.5 text-[10px] text-fg-muted'>
         Press{' '}
         <kbd className='rounded bg-surface-muted px-1 font-sans'>Enter</kbd> to
         send ·{' '}
@@ -67,7 +67,7 @@ function SendIcon() {
   return (
     <svg
       viewBox='0 0 24 24'
-      className='h-5 w-5'
+      className='h-4 w-4'
       fill='none'
       stroke='currentColor'
       strokeWidth='1.8'

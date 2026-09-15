@@ -1,6 +1,7 @@
 import { cn } from '@/utils/cn';
 import type { ChatMessage } from '@/features/assistant/types';
 import { AssistantAvatar } from './AssistantAvatar';
+import { RichText } from './RichText';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -33,21 +34,38 @@ export function ChatMessageBubble({
             : 'rounded-bl-sm border-border bg-surface text-fg-body',
         )}
       >
-        <p className='whitespace-pre-wrap leading-relaxed'>
-          {message.content}
-          {isStreaming ? (
-            <span
-              aria-hidden
-              className='ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-primary align-middle'
-            />
-          ) : null}
-        </p>
+        {isUser ? (
+          <p className='whitespace-pre-wrap leading-relaxed'>
+            {message.content}
+          </p>
+        ) : isStreaming ? (
+          <p className='whitespace-pre-wrap leading-relaxed'>
+            {message.content}
+            <TypingDots />
+          </p>
+        ) : (
+          <RichText content={message.content} />
+        )}
 
         {message.role === 'assistant' && !isStreaming ? (
           <AssistantMeta message={message} />
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** Three softly bouncing dots shown inline while the assistant is still typing. */
+function TypingDots() {
+  return (
+    <span
+      className='ml-1 inline-flex items-center gap-0.5 align-middle'
+      aria-label='Assistant is typing'
+    >
+      <span className='h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:-0.3s]' />
+      <span className='h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:-0.15s]' />
+      <span className='h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60' />
+    </span>
   );
 }
 

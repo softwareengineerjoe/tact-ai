@@ -22,19 +22,51 @@ import httpx
 
 from app.agents.tools import TOOLS, Citation, ToolContext, tool_specs
 
-PROMPT_VERSION = "2026-09-14"
+PROMPT_VERSION = "2026-09-15"
 
 # Attribution for "who made you" style questions (kept in one place).
 CREATOR_HANDLE = "softwareengineerjoe"
 
 _SYSTEM_PROMPT = (
-    "You are the TACT AI orchestrator, a read-only assistant that helps managers "
-    "understand their projects, people, capacity, tickets, and feedback. Answer "
-    "only from the data returned by the provided tools.\n\n"
+    "You are Tia, the TACT AI orchestrator: a read-only assistant that helps "
+    "managers understand and reason about their projects, people, capacity, "
+    "tickets, and feedback.\n\n"
     f"About you: TACT AI was created by {CREATOR_HANDLE}. If the user asks who "
     "made, built, created, or is the author/developer of the app or of you, tell "
     f"them TACT AI was built by {CREATOR_HANDLE}. This is general product "
     "information, not user data.\n\n"
+    "Two kinds of questions — answer both:\n"
+    "1. DATA questions (who is available, which tickets are blocked, project "
+    "health, capacity numbers): answer ONLY from the data returned by the tools. "
+    "Never invent employees, projects, tickets, scores, or numbers. If the tools "
+    "genuinely return no data, say so plainly.\n"
+    "2. PRODUCT questions (how does the Team Builder work, what is a Project Fit "
+    "Score, how is capacity calculated, what can you do): answer conceptually "
+    "from the product knowledge below. These are NOT data lookups — do not say "
+    "you lack data or tools for them; explain how the feature works.\n\n"
+    "Product knowledge (use to explain how TACT AI works):\n"
+    "- Team Builder & Project Fit Score: recommendations are scored "
+    "deterministically by a backend service (the AI only explains, never invents "
+    "the score). Weighting: required-skill coverage 40%, availability & capacity "
+    "30%, relevant experience 15%, preferred skills 10%, time-zone/schedule fit "
+    "5%. Each recommendation shows matched skills, missing skills, remaining "
+    "capacity, and conflicts; the manager makes the final decision.\n"
+    "- Capacity: remaining capacity = base working capacity − approved leave − "
+    "confirmed allocations − tentative reservations. Statuses: Available, "
+    "Partially Available, Fully Allocated, Overallocated, Unknown. Unknown is "
+    "never treated as available.\n"
+    "- Project health is rule-based (Green / Amber / Red); progress rolls up from "
+    "story points or completed tickets. Feedback can be private and is never used "
+    "in recommendation scoring.\n\n"
+    "Formatting (make answers premium and scannable, not a wall of text):\n"
+    "- Use short Markdown: '##' subheadings, '- ' bullet lists, '**bold**' for "
+    "key terms.\n"
+    "- Use a Markdown pipe table when comparing items or listing rows (e.g. "
+    "roles, candidates, tickets).\n"
+    "- For a numeric breakdown or distribution, emit a fenced ```chart block with "
+    "one 'Label: number' per line (e.g. score weightings, tickets per status, "
+    "capacity per person). Only use real numbers from tools for data questions.\n"
+    "- Keep it concise; lead with the answer, then supporting detail.\n\n"
     "Retrieval guidance:\n"
     "- Prefer broad retrieval first: call tools with NO filter arguments, then "
     "narrow in your own reasoning. Do not pass a 'status' or 'employment_status' "
@@ -45,9 +77,8 @@ _SYSTEM_PROMPT = (
     "search_projects, then call the project-scoped tool.\n"
     "- If a filtered call returns nothing, retry once without the filter before "
     "concluding there is no data.\n\n"
-    "Never invent employees, projects, tickets, scores, or numbers. If the tools "
-    "genuinely return no data, say so plainly. You cannot perform write actions in "
-    "this release. When you lack permission or data, say so clearly."
+    "You cannot perform write actions in this release. When you lack permission, "
+    "say so clearly."
 )
 
 
@@ -63,6 +94,124 @@ class AgentAnswer:
     model_version: str | None
     token_usage: int | None
     tools_used: list[str]
+
+
+def _product_knowledge_answer(question: str) -> AgentAnswer | None:
+    """Guaranteed rich answers for conceptual product questions (no LLM needed).
+
+    These are *how the product works* questions, not data lookups, so the answer
+    is deterministic and formatted with Markdown, tables, and ``chart`` blocks so
+    the client renders premium typography and diagrams every time. Returns None
+    when the question is not a known concept, so data questions fall through to
+    the tool-backed path.
+    """
+    q = question.lower()
+
+    def has(*words: str) -> bool:
+        return any(w in q for w in words)
+
+    # Team Builder / Project Fit Score.
+    if has("team builder", "fit score", "recommend", "recommendation", "matched to", "staffing score"):
+        return AgentAnswer(
+            answer=(
+                "## How the Team Builder recommends people\n\n"
+                "It ranks candidates for a role with a **Project Fit Score** that a "
+                "backend service computes **deterministically** — I only explain it, "
+                "I never invent the number.\n\n"
+                "The score weights five factors:\n\n"
+                "```chart\n"
+                "Required skills: 40\n"
+                "Availability: 30\n"
+                "Experience: 15\n"
+                "Preferred skills: 10\n"
+                "Time-zone fit: 5\n"
+                "```\n\n"
+                "Each recommendation also shows **matched skills**, **missing "
+                "skills**, remaining capacity, and any conflicts. The manager always "
+                "makes the final call."
+            ),
+            reasoning_summary="Explained the Team Builder scoring model.",
+            citations=[],
+            warnings=[],
+            suggested_next_action="Open a project's Team Builder to see live recommendations.",
+            model_version="product-knowledge",
+            token_usage=None,
+            tools_used=[],
+        )
+
+    # Capacity / availability.
+    if has("capacity", "availability", "overalloc", "workload"):
+        return AgentAnswer(
+            answer=(
+                "## How capacity is calculated\n\n"
+                "For a chosen period, **remaining capacity** is:\n\n"
+                "> Base working capacity − approved leave − confirmed allocations − "
+                "tentative reservations\n\n"
+                "People fall into one of these states:\n\n"
+                "| Status | Meaning |\n"
+                "| --- | --- |\n"
+                "| Available | Has meaningful free capacity |\n"
+                "| Partially Available | Some capacity remains |\n"
+                "| Fully Allocated | No spare capacity |\n"
+                "| Overallocated | Committed beyond 100% |\n"
+                "| Unknown | Not enough data — never treated as available |\n\n"
+                "TACT AI **warns** before confirming anyone above capacity."
+            ),
+            reasoning_summary="Explained the capacity formula and statuses.",
+            citations=[],
+            warnings=[],
+            suggested_next_action="Ask 'who is available for a backend role' to see real numbers.",
+            model_version="product-knowledge",
+            token_usage=None,
+            tools_used=[],
+        )
+
+    # Project health / progress.
+    if has("project health", "health status", "green amber red", "progress"):
+        return AgentAnswer(
+            answer=(
+                "## Project health & progress\n\n"
+                "**Health** is rule-based, not guessed:\n\n"
+                "| Status | When |\n"
+                "| --- | --- |\n"
+                "| Green | On track — no critical blockers or gaps |\n"
+                "| Amber | At risk — deadlines nearing, a role unfilled, or stale data |\n"
+                "| Red | Critical — overdue milestone, unfilled critical role, or no manager |\n\n"
+                "**Progress** rolls up from completed story points (or completed "
+                "tickets when points aren't available). Cancelled tickets don't count."
+            ),
+            reasoning_summary="Explained the health and progress rules.",
+            citations=[],
+            warnings=[],
+            suggested_next_action="Open a project overview to see its live health.",
+            model_version="product-knowledge",
+            token_usage=None,
+            tools_used=[],
+        )
+
+    # What can you do / capabilities.
+    if has("what can you do", "what do you do", "your capabilities", "what can you help"):
+        return AgentAnswer(
+            answer=(
+                "## What I can help with\n\n"
+                "I answer questions using only the data your role is allowed to see:\n\n"
+                "- **People & capacity** — who's available, skills, workload\n"
+                "- **Projects** — health, progress, staffing gaps\n"
+                "- **Tickets** — what's open, blocked, or overdue\n"
+                "- **Feedback & reports** — summaries you're authorized to view\n\n"
+                "I'm **read-only** in this release: for anything that changes data I "
+                "prepare a proposal a human approves first."
+            ),
+            reasoning_summary="Listed assistant capabilities.",
+            citations=[],
+            warnings=[],
+            suggested_next_action="Try 'which tickets are blocked?' or 'who is overallocated?'",
+            model_version="product-knowledge",
+            token_usage=None,
+            tools_used=[],
+        )
+
+    return None
 
 
 class AgentProvider(Protocol):
@@ -113,6 +262,10 @@ class LocalDeterministicProvider:
                 token_usage=None,
                 tools_used=[],
             )
+
+        concept = _product_knowledge_answer(question)
+        if concept is not None:
+            return concept
 
         name, arguments = self._pick_tool(question)
         data, citations, error = await _run_tool(ctx, name, arguments)
@@ -180,6 +333,9 @@ class FoundryAgentProvider:
         self._fallback = LocalDeterministicProvider()
 
     async def respond(self, ctx: ToolContext, question: str) -> AgentAnswer:
+        concept = _product_knowledge_answer(question)
+        if concept is not None:
+            return concept
         try:
             return await self._respond(ctx, question)
         except httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError:

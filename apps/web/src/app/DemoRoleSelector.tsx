@@ -16,8 +16,10 @@ export function DemoRoleSelector() {
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setActiveDemoRole(event.target.value);
-    // Full reload guarantees a clean cache + session refetch for the demo.
-    window.location.reload();
+    // Land on the assistant (available to every role) so switching personas
+    // never drops the visitor on a page the new role can't access. A full
+    // navigation also guarantees a clean cache + session refetch for the demo.
+    window.location.assign('/assistant');
   };
 
   return (

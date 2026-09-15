@@ -1,0 +1,113 @@
+name: Deploy to Azure
+
+# Auto-redeploy on every push to main. Backend and frontend run independently and
+# only when their files change (or on manual dispatch / the shared deploy script).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: tact-ai
+  ACR_NAME: tactaiacr
+  CONTAINER_APP: tactai-api
+  STATIC_WEB_APP: tactai-web
+  IMAGE_REPO: tact-api
+  # Backend origin baked into the frontend build.
+  API_BASE_URL: https://tactai-api.kindmoss-f3208b8d.southeastasia.azurecontainerapps.io
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Detect which parts of the monorepo changed so we skip unaffected deploys.
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/api/**'
+              - '.github/workflows/deploy.yml'
+            frontend:
+              - 'apps/web/**'
+              - '.github/workflows/deploy.yml'
+
+  # ---------------------------------------------------------------------------
+  # Backend: build the image in ACR (no local Docker) and roll out a new
+  # revision. Only the image changes — DB and secrets are left untouched.
+  # ---------------------------------------------------------------------------
+  backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build image in ACR
+        run: |
+          az acr build \
+            -r "$ACR_NAME" \
+            -t "$IMAGE_REPO:${{ github.sha }}" \
+            -t "$IMAGE_REPO:latest" \
+            -f apps/api/Dockerfile \
+            apps/api
+
+      - name: Roll out new revision
+        run: |
+          ACR_SERVER=$(az acr show -n "$ACR_NAME" -g "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)
+          az containerapp update \
+            -g "$AZURE_RESOURCE_GROUP" -n "$CONTAINER_APP" \
+            --image "$ACR_SERVER/$IMAGE_REPO:${{ github.sha }}"
+
+  # ---------------------------------------------------------------------------
+  # Frontend: build the SPA with the backend origin, then publish to Static
+  # Web Apps using the deployment token (no Azure AD login required).
+  # ---------------------------------------------------------------------------
+  frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          VITE_API_BASE: ${{ env.API_BASE_URL }}
+        run: pnpm --filter @tact/web build
+
+      - name: Deploy to Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: apps/web/dist
+          skip_app_build: true
+          output_location: ''

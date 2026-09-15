@@ -6,6 +6,7 @@ import {
   PeopleIcon,
   ProjectsIcon,
   ShieldIcon,
+  SitemapIcon,
   SparklesIcon,
   TicketIcon,
   UploadIcon,
@@ -34,6 +35,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: '/dashboard',
     label: 'Dashboard',
     icon: DashboardIcon,
+    permission: 'reports.view',
     hint: 'Management overview',
   },
   {
@@ -74,6 +76,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: '/admin/roles',
     label: 'Roles',
     icon: ShieldIcon,
+    permission: 'roles.manage',
     hint: 'Access model reference',
+  },
+  {
+    to: '/architecture',
+    label: 'Architecture',
+    icon: SitemapIcon,
+    hint: 'MVP system design & integrations',
   },
 ];

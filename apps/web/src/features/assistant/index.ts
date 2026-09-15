@@ -4,6 +4,7 @@ export { AssistantAvatar } from './components/AssistantAvatar';
 export { AssistantWelcome } from './components/AssistantWelcome';
 export { ChatMessageBubble } from './components/ChatMessageBubble';
 export { ChatComposer } from './components/ChatComposer';
+export { RichText } from './components/RichText';
 export { useAssistantSession } from './api/useAssistantSession';
 export { useCreateSession } from './api/useCreateSession';
 export { useSendMessage } from './api/useSendMessage';

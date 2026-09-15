@@ -55,7 +55,7 @@ export const GUIDE_ENTRIES: readonly GuideEntry[] = [
     question: 'What roles can I try?',
     keywords: ['role', 'roles', 'persona', 'permissions', 'access', 'who'],
     answer:
-      'The demo ships five roles: Organization Administrator (runs the whole workspace), Resource Manager (owns people, skills, and staffing), Project Manager (delivers projects end to end), Executive Viewer (read-only oversight), and Team Member (their own work). Each role sees only what it is permitted to \u2014 permissions are enforced by the backend, not just hidden in the UI.',
+      'The demo ships five roles, and each sees only what it is permitted to — permissions are enforced by the backend, not just hidden in the UI:\n\n| Role | Focus |\n| --- | --- |\n| Organization Admin | Runs the whole workspace |\n| Resource Manager | People, skills, and staffing |\n| Project Manager | Delivers projects end to end |\n| Executive Viewer | Read-only oversight |\n| Team Member | Their own work |\n\nYou can switch roles anytime from the top bar.',
     offersDemo: true,
   },
   {
@@ -81,7 +81,7 @@ export const GUIDE_ENTRIES: readonly GuideEntry[] = [
       'staffing',
     ],
     answer:
-      'The Team Builder compares people against a role and shows a Project Fit Score. That score is calculated deterministically from required-skill coverage, availability and capacity, relevant experience, preferred skills, and time-zone fit \u2014 the AI only explains it, it never invents it. Each recommendation shows matched skills, missing skills, remaining capacity, and any conflicts. The manager always makes the final call.',
+      'The Team Builder compares people against a role and shows a **Project Fit Score**, calculated deterministically — the AI only explains it, it never invents it.\n\nThe score weights five factors:\n\n```chart\nRequired skills: 40\nAvailability: 30\nExperience: 15\nPreferred skills: 10\nTime-zone fit: 5\n```\n\nEach recommendation also shows matched skills, missing skills, remaining capacity, and any conflicts. The manager always makes the final call.',
     offersDemo: true,
   },
   {

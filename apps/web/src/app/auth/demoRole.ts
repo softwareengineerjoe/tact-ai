@@ -30,6 +30,11 @@ export function getActiveDemoRole(): string | null {
   }
 }
 
+/** Friendly label for a demo role key, falling back to the key itself. */
+export function getDemoRoleLabel(key: string | null): string {
+  return DEMO_ROLES.find((role) => role.key === key)?.label ?? 'Team Member';
+}
+
 /** Persist the active demo role. Callers refresh queries after changing it. */
 export function setActiveDemoRole(key: string): void {
   try {

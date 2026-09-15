@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 import { DEMO_ROLE_HEADER, getActiveDemoRole } from '@/app/auth/demoRole';
 
-const API_BASE = '/api/v1';
+// Build-time API origin. Empty in local dev so the Vite proxy handles `/api`.
+// In production it points at the deployed backend, e.g. https://<app>.azurecontainerapps.io
+const API_ORIGIN = import.meta.env.VITE_API_BASE ?? '';
+const API_BASE = `${API_ORIGIN}/api/v1`;
 
 export interface ApiError extends Error {
   status: number;

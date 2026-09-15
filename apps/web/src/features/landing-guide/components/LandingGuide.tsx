@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
-import { AssistantAvatar } from '@/features/assistant';
+import { AssistantAvatar, RichText } from '@/features/assistant';
 import { cn } from '@/utils/cn';
 
 import { GUIDE_ENTRIES, answerQuestion } from '../knowledge';
@@ -329,15 +329,25 @@ function GuideBubble({
             : 'rounded-bl-sm border-border bg-surface text-fg-body',
         )}
       >
-        <p className='whitespace-pre-wrap leading-relaxed'>
-          {message.content}
-          {message.typing ? (
+        {isUser ? (
+          <p className='whitespace-pre-wrap leading-relaxed'>
+            {message.content}
+          </p>
+        ) : message.typing ? (
+          <p className='whitespace-pre-wrap leading-relaxed'>
+            {message.content}
             <span
-              aria-hidden
-              className='ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-primary align-middle'
-            />
-          ) : null}
-        </p>
+              className='ml-1 inline-flex items-center gap-0.5 align-middle'
+              aria-label='Assistant is typing'
+            >
+              <span className='h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:-0.3s]' />
+              <span className='h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:-0.15s]' />
+              <span className='h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60' />
+            </span>
+          </p>
+        ) : (
+          <RichText content={message.content} />
+        )}
         {!isUser && message.offersDemo ? (
           <button
             type='button'

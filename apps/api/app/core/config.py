@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     environment: str = "local"
     database_url: str = "postgresql+asyncpg://tact:tact_local_password@localhost:5432/tact"
 
+    # Comma-separated list of allowed browser origins for CORS. Defaults to the
+    # local Vite dev server; production sets the deployed frontend origin(s).
+    cors_allow_origins: str = "http://localhost:5173"
+
     # AI model deployment names are configuration, never hardcoded (MASTER 18.4).
     ai_model_deployment: str = "configure-me"
     ai_embedding_deployment: str = "configure-me"
@@ -30,6 +34,10 @@ class Settings(BaseSettings):
     @property
     def ai_foundry_configured(self) -> bool:
         return bool(self.ai_foundry_endpoint and self.ai_foundry_api_key)
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allow_origins.split(",") if origin.strip()]
 
 
 @lru_cache
